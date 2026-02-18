@@ -24,6 +24,7 @@ export class HQScene extends Phaser.Scene {
     this.load.image('floors', `${TILESET_BASE}/Room_Builder_Floors_32x32.png`);
     this.load.image('walls', `${TILESET_BASE}/Room_Builder_Walls_32x32.png`);
     this.load.image('walls3d', `${TILESET_BASE}/Room_Builder_3d_walls_32x32.png`);
+    this.load.image('borders', `${TILESET_BASE}/Room_Builder_borders_32x32.png`);
   }
 
   create() {
@@ -35,6 +36,8 @@ export class HQScene extends Phaser.Scene {
     map.createLayer('floor', [floorTs])!.setDepth(0);
     map.createLayer('walls', [wallTs])!.setDepth(1);
     map.createLayer('walls3d', [w3dTs])!.setDepth(2);
+    const bordersTs = map.addTilesetImage('borders', 'borders')!;
+    map.createLayer('glass', [bordersTs])!.setDepth(3);
 
     this.setupCamera();
   }
