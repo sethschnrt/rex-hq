@@ -43,8 +43,10 @@ export class HQScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, ROOM_PX_W, ROOM_PX_H);
     cam.centerOn(ROOM_PX_W / 2, ROOM_PX_H / 2);
-    const fitZoom = Math.max(cam.width / ROOM_PX_W, cam.height / ROOM_PX_H);
+    // Fit entire room in viewport (no clipping)
+    const fitZoom = Math.min(cam.width / ROOM_PX_W, cam.height / ROOM_PX_H);
     cam.setZoom(fitZoom);
+    cam.setBackgroundColor('#1a1a2e');
 
     this.input.on('wheel', (_p: any, _go: any, _dx: number, dy: number) => {
       const minZ = Math.min(cam.width / ROOM_PX_W, cam.height / ROOM_PX_H);
