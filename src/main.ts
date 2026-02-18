@@ -6,7 +6,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game-container',
   width: window.innerWidth,
   height: window.innerHeight,
-  backgroundColor: '#1a1a2e',
+  backgroundColor: '#2d2d3f',
   pixelArt: true,
   scale: {
     mode: Phaser.Scale.RESIZE,
