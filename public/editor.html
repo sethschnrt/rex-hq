@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Rex HQ Room Editor</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; color: #fff; font-family: monospace; display: flex; height: 100vh; overflow: hidden; }
+#palette-panel { width: 320px; border-right: 2px solid #444; display: flex; flex-direction: column; }
+#palette-tabs { display: flex; gap: 2px; padding: 4px; background: #222; flex-wrap: wrap; }
+#palette-tabs button { padding: 4px 8px; font-size: 11px; cursor: pointer; background: #333; color: #fff; border: 1px solid #555; }
+#palette-tabs button.active { background: #0af; color: #000; }
+#palette-wrap { flex: 1; overflow-y: auto; padding: 4px; }
+#palette { image-rendering: pixelated; cursor: crosshair; }
+#main { flex: 1; display: flex; flex-direction: column; }
+#toolbar { padding: 6px; background: #222; display: flex; gap: 8px; align-items: center; font-size: 12px; }
+#toolbar button { padding: 4px 10px; cursor: pointer; }
+#toolbar select { padding: 2px; }
+#canvas-wrap { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; background: #111; }
+#map-canvas { image-rendering: pixelated; cursor: crosshair; border: 1px solid #555; }
+#selected-tile { width: 64px; height: 64px; image-rendering: pixelated; border: 2px solid #0af; background: #333; }
+#info { font-size: 11px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<div id="palette-panel">
+  <div id="palette-tabs"></div>
+  <div id="palette-wrap">
+    <canvas id="palette"></canvas>
+  </div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <canvas id="selected-tile" width="64" height="64"></canvas>
+    <div>
+      <div>Layer: <select id="layer-select"></select></div>
+      <div id="info">Click palette → paint on map</div>
+      <div>
+        <button id="btn-export">Export JSON</button>
+        <button id="btn-clear">Clear Layer</button>
+        <button id="btn-undo">Undo</button>
+      </div>
+    </div>
+    <div>
+      <div>Zoom: <input type="range" id="zoom" min="1" max="6" value="3" step="0.5"></div>
+      <div>Eraser: <input type="checkbox" id="eraser"></div>
+    </div>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="map-canvas"></canvas>
+  </div>
+</div>
+
+<script>
+const T = 32;
+const MAP_W = 14, MAP_H = 11;
+const TILESETS = [
+  { name: 'floors', src: 'assets/tilesets/limezu/1_Interiors/32x32/Room_Bulder_subfiles_32x32/Room_Builder_Floors_32x32.png' },
+  { name: 'walls', src: 'assets/tilesets/limezu/1_Interiors/32x32/Room_Bulder_subfiles_32x32/Room_Builder_Walls_32x32.png' },
+  { name: 'walls3d', src: 'assets/tilesets/limezu/1_Interiors/32x32/Room_Bulder_subfiles_32x32/Room_Builder_3d_walls_32x32.png' },
+  { name: 'shadows', src: 'assets/tilesets/limezu/1_Interiors/32x32/Room_Bulder_subfiles_32x32/Room_Builder_Floor_Shadows_32x32.png' },
+];
+const LAYERS = ['floor', 'walls', 'walls3d', 'furniture'];
+
+// State
+let layers = {};
+LAYERS.forEach(l => layers[l] = new Array(MAP_W * MAP_H).fill(null));
+let currentLayer = 'floor';
+let selectedTile = null; // { tileset, localIdx, cols }
+let tilesetImages = {};
+let undoStack = [];
+let zoom = 3;
+
+// Load tilesets
+async function init() {
+  const tabsEl = document.getElementById('palette-tabs');
+  
+  for (const ts of TILESETS) {
+    const img = new Image();
+    img.src = ts.src;
+    await new Promise(r => { img.onload = r; img.onerror = r; });
+    tilesetImages[ts.name] = img;
+    ts.cols = img.width / T;
+    ts.rows = img.height / T;
+    
+    const btn = document.createElement('button');
+    btn.textContent = ts.name;
+    btn.onclick = () => showPalette(ts.name);
+    tabsEl.appendChild(btn);
+  }
+  
+  // Also load furniture singles as a special tileset
+  // We'll handle those separately later
+  
+  const layerSel = document.getElementById('layer-select');
+  LAYERS.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l; opt.textContent = l;
+    layerSel.appendChild(opt);
+  });
+  layerSel.value = currentLayer;
+  layerSel.onchange = () => { currentLayer = layerSel.value; };
+  
+  showPalette('floors');
+  setupMapCanvas();
+  renderMap();
+  
+  document.getElementById('zoom').oninput = (e) => {
+    zoom = parseFloat(e.target.value);
+    setupMapCanvas();
+    renderMap();
+  };
+  document.getElementById('btn-export').onclick = exportJSON;
+  document.getElementById('btn-clear').onclick = () => {
+    saveUndo();
+    layers[currentLayer] = new Array(MAP_W * MAP_H).fill(null);
+    renderMap();
+  };
+  document.getElementById('btn-undo').onclick = undo;
+}
+
+function showPalette(name) {
+  const img = tilesetImages[name];
+  if (!img) return;
+  const ts = TILESETS.find(t => t.name === name);
+  const canvas = document.getElementById('palette');
+  const scale = 2;
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  // Checkerboard background for transparency
+  for (let y = 0; y < canvas.height; y += 16) {
+    for (let x = 0; x < canvas.width; x += 16) {
+      ctx.fillStyle = ((x/16 + y/16) % 2) ? '#2a2a3a' : '#222233';
+      ctx.fillRect(x, y, 16, 16);
+    }
+  }
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  for (let x = 0; x <= ts.cols; x++) {
+    ctx.beginPath(); ctx.moveTo(x*T*scale, 0); ctx.lineTo(x*T*scale, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= ts.rows; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y*T*scale); ctx.lineTo(canvas.width, y*T*scale); ctx.stroke();
+  }
+  
+  // Update active tab
+  document.querySelectorAll('#palette-tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#palette-tabs button:nth-child(${TILESETS.indexOf(ts)+1})`).classList.add('active');
+  
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / scale;
+    const py = (e.clientY - rect.top) / scale;
+    const col = Math.floor(px / T);
+    const row = Math.floor(py / T);
+    const localIdx = row * ts.cols + col;
+    selectedTile = { tileset: name, localIdx, cols: ts.cols, row, col };
+    
+    // Show selected tile
+    const selCanvas = document.getElementById('selected-tile');
+    const selCtx = selCanvas.getContext('2d');
+    selCtx.imageSmoothingEnabled = false;
+    selCtx.clearRect(0, 0, 64, 64);
+    selCtx.drawImage(img, col*T, row*T, T, T, 0, 0, 64, 64);
+    
+    document.getElementById('info').textContent = `${name} #${localIdx} (r${row} c${col})`;
+  };
+}
+
+function setupMapCanvas() {
+  const canvas = document.getElementById('map-canvas');
+  canvas.width = MAP_W * T * zoom;
+  canvas.height = MAP_H * T * zoom;
+}
+
+function renderMap() {
+  const canvas = document.getElementById('map-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw each layer in order
+  for (const layerName of LAYERS) {
+    const data = layers[layerName];
+    for (let i = 0; i < data.length; i++) {
+      if (!data[i]) continue;
+      const { tileset, localIdx, cols } = data[i];
+      const img = tilesetImages[tileset];
+      if (!img) continue;
+      const sx = (localIdx % cols) * T;
+      const sy = Math.floor(localIdx / cols) * T;
+      const dx = (i % MAP_W) * T * zoom;
+      const dy = Math.floor(i / MAP_W) * T * zoom;
+      ctx.drawImage(img, sx, sy, T, T, dx, dy, T*zoom, T*zoom);
+    }
+  }
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= MAP_W; x++) {
+    ctx.beginPath(); ctx.moveTo(x*T*zoom, 0); ctx.lineTo(x*T*zoom, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= MAP_H; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y*T*zoom); ctx.lineTo(canvas.width, y*T*zoom); ctx.stroke();
+  }
+}
+
+// Map painting
+let isPainting = false;
+document.getElementById('map-canvas').addEventListener('mousedown', (e) => {
+  isPainting = true;
+  saveUndo();
+  paintTile(e);
+});
+document.getElementById('map-canvas').addEventListener('mousemove', (e) => {
+  if (isPainting) paintTile(e);
+});
+document.addEventListener('mouseup', () => { isPainting = false; });
+
+function paintTile(e) {
+  const canvas = document.getElementById('map-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  const col = Math.floor(px / (T * zoom));
+  const row = Math.floor(py / (T * zoom));
+  if (col < 0 || col >= MAP_W || row < 0 || row >= MAP_H) return;
+  const idx = row * MAP_W + col;
+  
+  if (document.getElementById('eraser').checked) {
+    layers[currentLayer][idx] = null;
+  } else if (selectedTile) {
+    layers[currentLayer][idx] = { ...selectedTile };
+  }
+  renderMap();
+}
+
+function saveUndo() {
+  undoStack.push(JSON.parse(JSON.stringify(layers)));
+  if (undoStack.length > 50) undoStack.shift();
+}
+function undo() {
+  if (!undoStack.length) return;
+  layers = undoStack.pop();
+  renderMap();
+}
+
+function exportJSON() {
+  // Build Tiled-compatible JSON
+  const firstgids = { floors: 1, walls: 601, shadows: 1881, walls3d: 1961 };
+  // Recalculate firstgids based on actual tileset sizes
+  let gid = 1;
+  const gidMap = {};
+  for (const ts of TILESETS) {
+    gidMap[ts.name] = gid;
+    gid += ts.cols * ts.rows;
+  }
+  
+  const mapData = {
+    width: MAP_W, height: MAP_H,
+    tilewidth: T, tileheight: T,
+    orientation: 'orthogonal',
+    renderorder: 'right-down',
+    tilesets: TILESETS.map(ts => ({
+      name: ts.name,
+      firstgid: gidMap[ts.name],
+      columns: ts.cols,
+      tilecount: ts.cols * ts.rows,
+      tilewidth: T, tileheight: T,
+      image: '../' + ts.src,
+      imagewidth: ts.cols * T,
+      imageheight: ts.rows * T,
+      margin: 0, spacing: 0,
+    })),
+    layers: LAYERS.map(name => ({
+      name,
+      type: 'tilelayer',
+      width: MAP_W, height: MAP_H,
+      x: 0, y: 0, opacity: 1, visible: true,
+      data: layers[name].map(t => {
+        if (!t) return 0;
+        return gidMap[t.tileset] + t.localIdx;
+      }),
+    })),
+  };
+  
+  const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hq.json';
+  a.click();
+  
+  // Also store in localStorage
+  localStorage.setItem('rex-hq-map', JSON.stringify(mapData));
+  document.getElementById('info').textContent = 'Exported! (also saved to localStorage)';
+}
+
+init();
+</script>
+</body>
+</html>
