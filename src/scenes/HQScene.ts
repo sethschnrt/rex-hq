@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
 const T = 32;
-const MAP_W = 28;
-const MAP_H = 16;
+const MAP_W = 20;
+const MAP_H = 22;
 const MAP_PX_W = MAP_W * T;
 const MAP_PX_H = MAP_H * T;
 
