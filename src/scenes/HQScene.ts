@@ -7,7 +7,6 @@ const MAP_PX_W = MAP_W * T;
 const MAP_PX_H = MAP_H * T;
 
 const TILESET_BASE = 'assets/tilesets/limezu/1_Interiors/32x32/Room_Bulder_subfiles_32x32';
-const ANIM_BASE = 'assets/tilesets/limezu/3_Animated_objects/32x32/spritesheets';
 
 export class HQScene extends Phaser.Scene {
   private isDragging = false;
@@ -25,13 +24,6 @@ export class HQScene extends Phaser.Scene {
     this.load.image('floors', `${TILESET_BASE}/Room_Builder_Floors_32x32.png`);
     this.load.image('walls', `${TILESET_BASE}/Room_Builder_Walls_32x32.png`);
     this.load.image('walls3d', `${TILESET_BASE}/Room_Builder_3d_walls_32x32.png`);
-    // Glass door spritesheets (16 frames, 32x96 each = 512x96 total)
-    this.load.spritesheet('door-glass-left', `${ANIM_BASE}/animated_door_glass_vertical_left_32x32.png`, {
-      frameWidth: 32, frameHeight: 96
-    });
-    this.load.spritesheet('door-glass-right', `${ANIM_BASE}/animated_door_glass_vertical_right_32x32.png`, {
-      frameWidth: 32, frameHeight: 96
-    });
   }
 
   create() {
@@ -44,30 +36,7 @@ export class HQScene extends Phaser.Scene {
     map.createLayer('walls', [wallTs])!.setDepth(1);
     map.createLayer('walls3d', [w3dTs])!.setDepth(2);
 
-    this.placeDoors();
     this.setupCamera();
-  }
-
-  private placeDoors() {
-    // Door sprites are 32x96 (1x3 tiles). Frame 0 = closed.
-    // Place at the wall boundary between rooms.
-    // Left boundary = col 7/8, right boundary = col 19/20
-    // Door centered on the boundary: x = boundary * T
-
-    const doors: { key: string; px: number; py: number }[] = [
-      // Left boundary doors (col 7-8 boundary)
-      { key: 'door-glass-left', px: 7.5 * T - 16, py: 4 * T },   // Rex ↔ Main
-      { key: 'door-glass-left', px: 7.5 * T - 16, py: 12 * T },  // Kitchen ↔ Main
-      // Right boundary doors (col 19-20 boundary)
-      { key: 'door-glass-right', px: 19.5 * T - 16, py: 4 * T }, // Main ↔ Conference
-      { key: 'door-glass-right', px: 19.5 * T - 16, py: 12 * T },// Main ↔ Lounge
-    ];
-
-    for (const d of doors) {
-      const sprite = this.add.sprite(d.px, d.py, d.key, 0);
-      sprite.setOrigin(0, 0);
-      sprite.setDepth(3);
-    }
   }
 
   private setupCamera() {
