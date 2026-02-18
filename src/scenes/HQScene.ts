@@ -49,22 +49,22 @@ export class HQScene extends Phaser.Scene {
   }
 
   private placeDoors() {
-    // Door sprites are 32x96 (1x3 tiles). Origin top-left.
-    // Placed at the wall opening between rooms. Frame 0 = closed.
-    // Left wall doors (Main ↔ Rex, Main ↔ Kitchen): use glass-left
-    // Right wall doors (Main ↔ Conference, Main ↔ Lounge): use glass-right
+    // Door sprites are 32x96 (1x3 tiles). Frame 0 = closed.
+    // Place at the wall boundary between rooms.
+    // Left boundary = col 7/8, right boundary = col 19/20
+    // Door centered on the boundary: x = boundary * T
 
-    const doors: { key: string; col: number; row: number }[] = [
-      // Left doors (between Rex/Kitchen and Main)
-      { key: 'door-glass-left', col: 8, row: 4 },   // Rex ↔ Main
-      { key: 'door-glass-left', col: 8, row: 12 },   // Kitchen ↔ Main
-      // Right doors (between Main and Conference/Lounge)
-      { key: 'door-glass-right', col: 19, row: 4 },  // Main ↔ Conference
-      { key: 'door-glass-right', col: 19, row: 12 }, // Main ↔ Lounge
+    const doors: { key: string; px: number; py: number }[] = [
+      // Left boundary doors (col 7-8 boundary)
+      { key: 'door-glass-left', px: 7.5 * T - 16, py: 4 * T },   // Rex ↔ Main
+      { key: 'door-glass-left', px: 7.5 * T - 16, py: 12 * T },  // Kitchen ↔ Main
+      // Right boundary doors (col 19-20 boundary)
+      { key: 'door-glass-right', px: 19.5 * T - 16, py: 4 * T }, // Main ↔ Conference
+      { key: 'door-glass-right', px: 19.5 * T - 16, py: 12 * T },// Main ↔ Lounge
     ];
 
     for (const d of doors) {
-      const sprite = this.add.sprite(d.col * T, d.row * T, d.key, 0);
+      const sprite = this.add.sprite(d.px, d.py, d.key, 0);
       sprite.setOrigin(0, 0);
       sprite.setDepth(3);
     }
