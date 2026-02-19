@@ -7,6 +7,7 @@ const MAP_PX_W = MAP_W * T;
 const MAP_PX_H = MAP_H * T;
 
 const TILESET_BASE = 'assets/tilesets/limezu/1_Interiors/32x32/Room_Bulder_subfiles_32x32';
+const THEME_BASE = 'assets/tilesets/limezu/1_Interiors/32x32/Theme_Sorter_32x32';
 
 export class HQScene extends Phaser.Scene {
   private isDragging = false;
@@ -24,6 +25,7 @@ export class HQScene extends Phaser.Scene {
     this.load.image('floors', `${TILESET_BASE}/Room_Builder_Floors_32x32.png`);
     this.load.image('walls', `${TILESET_BASE}/Room_Builder_Walls_32x32.png`);
     this.load.image('walls3d', `${TILESET_BASE}/Room_Builder_3d_walls_32x32.png`);
+    this.load.image('basement', `${THEME_BASE}/14_Basement_32x32.png`);
   }
 
   create() {
@@ -31,10 +33,12 @@ export class HQScene extends Phaser.Scene {
     const floorTs = map.addTilesetImage('floors', 'floors')!;
     const wallTs = map.addTilesetImage('walls', 'walls')!;
     const w3dTs = map.addTilesetImage('walls3d', 'walls3d')!;
+    const basementTs = map.addTilesetImage('basement', 'basement')!;
 
     map.createLayer('floor', [floorTs])!.setDepth(0);
     map.createLayer('walls', [wallTs])!.setDepth(1);
     map.createLayer('walls3d', [w3dTs])!.setDepth(2);
+    map.createLayer('glass', [basementTs])!.setDepth(3);
 
     this.setupCamera();
   }
