@@ -1,0 +1,182 @@
+{
+  "J91": {
+    "label": "water_cooler",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Jail"
+  },
+  "J151": {
+    "label": "monitor_center",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Jail"
+  },
+  "J159": {
+    "label": "desk_chair",
+    "size": [
+      32,
+      48
+    ],
+    "tiles": "1x2",
+    "pack": "Jail"
+  },
+  "J167": {
+    "label": "office_chair_blue",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Jail"
+  },
+  "J238": {
+    "label": "small_desk",
+    "size": [
+      64,
+      64
+    ],
+    "tiles": "2x2",
+    "pack": "Jail"
+  },
+  "J270": {
+    "label": "water_dispenser",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Jail"
+  },
+  "J277": {
+    "label": "shelving_unit",
+    "size": [
+      64,
+      96
+    ],
+    "tiles": "2x3",
+    "pack": "Jail"
+  },
+  "J281": {
+    "label": "nameplate_gold",
+    "size": [
+      32,
+      32
+    ],
+    "tiles": "1x1",
+    "pack": "Jail"
+  },
+  "G52": {
+    "label": "commercial_fridge_closed",
+    "size": [
+      64,
+      96
+    ],
+    "tiles": "2x3",
+    "pack": "Grocery"
+  },
+  "G451": {
+    "label": "potted_plant",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Grocery"
+  },
+  "B46": {
+    "label": "couch_piece",
+    "size": [
+      48,
+      48
+    ],
+    "tiles": "2x2",
+    "pack": "Basement"
+  },
+  "B193": {
+    "label": "tv_wall",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Basement"
+  },
+  "B203": {
+    "label": "chair_down_white",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Basement"
+  },
+  "B207": {
+    "label": "chair_up_white",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Basement"
+  },
+  "B210": {
+    "label": "chair_left_white",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Basement"
+  },
+  "B214": {
+    "label": "chair_right_white",
+    "size": [
+      32,
+      64
+    ],
+    "tiles": "1x2",
+    "pack": "Basement"
+  },
+  "B242": {
+    "label": "ping_pong_table",
+    "size": [
+      64,
+      96
+    ],
+    "tiles": "2x3",
+    "pack": "Basement"
+  },
+  "H120": {
+    "label": "wall_monitor",
+    "size": [
+      64,
+      64
+    ],
+    "tiles": "2x2",
+    "pack": "Hospital"
+  },
+  "LR14": {
+    "label": "palm_tree_planter",
+    "size": [
+      64,
+      64
+    ],
+    "tiles": "2x2",
+    "pack": "LivingRoom"
+  },
+  "M113": {
+    "label": "great_wave_art",
+    "size": [
+      64,
+      32
+    ],
+    "tiles": "2x1",
+    "pack": "Museum"
+  }
+}
