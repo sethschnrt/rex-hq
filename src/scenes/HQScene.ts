@@ -26,6 +26,7 @@ export class HQScene extends Phaser.Scene {
     this.load.image('walls', `${TILESET_BASE}/Room_Builder_Walls_32x32.png`);
     this.load.image('walls3d', `${TILESET_BASE}/Room_Builder_3d_walls_32x32.png`);
     this.load.image('basement', `${THEME_BASE}/14_Basement_32x32.png`);
+    this.load.image('glass_door', 'assets/tilesets/limezu/glass_door_closed.png');
   }
 
   create() {
@@ -34,11 +35,13 @@ export class HQScene extends Phaser.Scene {
     const wallTs = map.addTilesetImage('walls', 'walls')!;
     const w3dTs = map.addTilesetImage('walls3d', 'walls3d')!;
     const basementTs = map.addTilesetImage('basement', 'basement')!;
+    const doorTs = map.addTilesetImage('glass_door', 'glass_door')!;
 
     map.createLayer('floor', [floorTs])!.setDepth(0);
     map.createLayer('walls', [wallTs])!.setDepth(1);
     map.createLayer('walls3d', [w3dTs])!.setDepth(2);
     map.createLayer('glass', [basementTs])!.setDepth(3);
+    map.createLayer('furniture', [doorTs])!.setDepth(4);
 
     this.setupCamera();
   }
