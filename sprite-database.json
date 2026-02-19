@@ -1,182 +1,282 @@
 {
-  "J91": {
-    "label": "water_cooler",
-    "size": [
-      32,
-      64
-    ],
-    "tiles": "1x2",
-    "pack": "Jail"
-  },
-  "J151": {
-    "label": "monitor_center",
-    "size": [
-      32,
-      64
-    ],
-    "tiles": "1x2",
-    "pack": "Jail"
-  },
-  "J159": {
-    "label": "desk_chair",
-    "size": [
-      32,
-      48
-    ],
-    "tiles": "1x2",
-    "pack": "Jail"
-  },
-  "J167": {
-    "label": "office_chair_blue",
-    "size": [
-      32,
-      64
-    ],
-    "tiles": "1x2",
-    "pack": "Jail"
-  },
-  "J238": {
-    "label": "small_desk",
+  "J227": {
+    "label": "open_fridge_empty",
+    "category": "appliance",
     "size": [
       64,
-      64
-    ],
-    "tiles": "2x2",
-    "pack": "Jail"
+      96
+    ]
+  },
+  "J228": {
+    "label": "open_fridge_empty2",
+    "category": "appliance",
+    "size": [
+      64,
+      96
+    ]
+  },
+  "J231": {
+    "label": "open_fridge_with_food",
+    "category": "appliance",
+    "size": [
+      64,
+      96
+    ]
+  },
+  "J229": {
+    "label": "tall_cabinet_1",
+    "category": "furniture",
+    "size": [
+      32,
+      96
+    ]
+  },
+  "J230": {
+    "label": "tall_cabinet_2",
+    "category": "furniture",
+    "size": [
+      32,
+      96
+    ]
+  },
+  "J232": {
+    "label": "tall_cabinet_with_person",
+    "category": "furniture",
+    "size": [
+      32,
+      96
+    ]
+  },
+  "J233": {
+    "label": "tall_cabinet_with_person2",
+    "category": "furniture",
+    "size": [
+      32,
+      96
+    ]
+  },
+  "J234": {
+    "label": "tall_cabinet_with_person3",
+    "category": "furniture",
+    "size": [
+      32,
+      96
+    ]
+  },
+  "J277": {
+    "label": "display_case_1",
+    "category": "furniture",
+    "size": [
+      64,
+      96
+    ]
+  },
+  "J278": {
+    "label": "display_case_2",
+    "category": "furniture",
+    "size": [
+      64,
+      96
+    ]
   },
   "J270": {
     "label": "water_dispenser",
+    "category": "appliance",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Jail"
+    ]
   },
-  "J277": {
-    "label": "shelving_unit",
+  "J273": {
+    "label": "dispenser_2",
+    "category": "appliance",
     "size": [
-      64,
-      96
-    ],
-    "tiles": "2x3",
-    "pack": "Jail"
+      32,
+      64
+    ]
   },
-  "J281": {
-    "label": "nameplate_gold",
+  "J274": {
+    "label": "dispenser_3",
+    "category": "appliance",
+    "size": [
+      32,
+      64
+    ]
+  },
+  "J279": {
+    "label": "food_tray_1",
+    "category": "food",
     "size": [
       32,
       32
-    ],
-    "tiles": "1x1",
-    "pack": "Jail"
+    ]
   },
-  "G52": {
-    "label": "commercial_fridge_closed",
+  "J280": {
+    "label": "food_tray_2",
+    "category": "food",
+    "size": [
+      32,
+      32
+    ]
+  },
+  "J281": {
+    "label": "food_tray_3",
+    "category": "food",
+    "size": [
+      32,
+      32
+    ]
+  },
+  "J306": {
+    "label": "food_item_1",
+    "category": "food",
+    "size": [
+      32,
+      32
+    ]
+  },
+  "J238": {
+    "label": "small_desk_white",
+    "category": "furniture",
     "size": [
       64,
-      96
-    ],
-    "tiles": "2x3",
-    "pack": "Grocery"
+      64
+    ]
   },
-  "G451": {
-    "label": "potted_plant",
+  "J151": {
+    "label": "center_monitor",
+    "category": "tech",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Grocery"
+    ]
+  },
+  "J159": {
+    "label": "desk_chair_gray",
+    "category": "furniture",
+    "size": [
+      32,
+      48
+    ]
+  },
+  "J167": {
+    "label": "office_chair_blue",
+    "category": "furniture",
+    "size": [
+      32,
+      64
+    ]
+  },
+  "J137": {
+    "label": "angled_monitor_left",
+    "category": "tech",
+    "size": [
+      32,
+      64
+    ]
+  },
+  "G52": {
+    "label": "commercial_fridge_glass_doors",
+    "category": "appliance",
+    "size": [
+      64,
+      96
+    ]
+  },
+  "G451": {
+    "label": "potted_plant_tall",
+    "category": "decoration",
+    "size": [
+      32,
+      64
+    ]
   },
   "B46": {
-    "label": "couch_piece",
+    "label": "white_couch_piece",
+    "category": "furniture",
     "size": [
       48,
       48
-    ],
-    "tiles": "2x2",
-    "pack": "Basement"
+    ]
   },
   "B193": {
-    "label": "tv_wall",
+    "label": "wall_tv",
+    "category": "tech",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Basement"
+    ]
   },
   "B203": {
-    "label": "chair_down_white",
+    "label": "white_chair_facing_down",
+    "category": "furniture",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Basement"
+    ]
   },
   "B207": {
-    "label": "chair_up_white",
+    "label": "white_chair_facing_up",
+    "category": "furniture",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Basement"
+    ]
   },
   "B210": {
-    "label": "chair_left_white",
+    "label": "white_chair_facing_left",
+    "category": "furniture",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Basement"
+    ]
   },
   "B214": {
-    "label": "chair_right_white",
+    "label": "white_chair_facing_right",
+    "category": "furniture",
     "size": [
       32,
       64
-    ],
-    "tiles": "1x2",
-    "pack": "Basement"
+    ]
   },
   "B242": {
     "label": "ping_pong_table",
+    "category": "furniture",
     "size": [
       64,
       96
-    ],
-    "tiles": "2x3",
-    "pack": "Basement"
+    ]
   },
   "H120": {
-    "label": "wall_monitor",
+    "label": "wall_mounted_monitor",
+    "category": "tech",
     "size": [
       64,
       64
-    ],
-    "tiles": "2x2",
-    "pack": "Hospital"
+    ]
   },
   "LR14": {
-    "label": "palm_tree_planter",
+    "label": "palm_tree_in_planter",
+    "category": "decoration",
     "size": [
       64,
       64
-    ],
-    "tiles": "2x2",
-    "pack": "LivingRoom"
+    ]
   },
   "M113": {
-    "label": "great_wave_art",
+    "label": "great_wave_painting",
+    "category": "decoration",
     "size": [
       64,
       32
-    ],
-    "tiles": "2x1",
-    "pack": "Museum"
+    ]
+  },
+  "K404": {
+    "label": "donuts_box",
+    "category": "food",
+    "size": [
+      32,
+      32
+    ]
   }
 }
