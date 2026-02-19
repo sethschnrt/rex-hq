@@ -25,6 +25,7 @@ export class HQScene extends Phaser.Scene {
     this.load.image('floors', `${TILESET_BASE}/Room_Builder_Floors_32x32.png`);
     this.load.image('walls', `${TILESET_BASE}/Room_Builder_Walls_32x32.png`);
     this.load.image('walls3d', `${TILESET_BASE}/Room_Builder_3d_walls_32x32.png`);
+    this.load.image('shadows', `${TILESET_BASE}/Room_Builder_Floor_Shadows_32x32.png`);
     this.load.image('basement', `${THEME_BASE}/14_Basement_32x32.png`);
     this.load.image('glass_door', 'assets/tilesets/limezu/glass_door_closed.png');
     this.load.image('classroom', `${THEME_BASE}/5_Classroom_and_library_32x32.png`);
@@ -39,6 +40,7 @@ export class HQScene extends Phaser.Scene {
     const floorTs = map.addTilesetImage('floors', 'floors')!;
     const wallTs = map.addTilesetImage('walls', 'walls')!;
     const w3dTs = map.addTilesetImage('walls3d', 'walls3d')!;
+    const shadowsTs = map.addTilesetImage('shadows', 'shadows')!;
     const basementTs = map.addTilesetImage('basement', 'basement')!;
     const doorTs = map.addTilesetImage('glass_door', 'glass_door')!;
     const classTs = map.addTilesetImage('classroom', 'classroom')!;
@@ -47,7 +49,7 @@ export class HQScene extends Phaser.Scene {
     const lrTs = map.addTilesetImage('livingroom', 'livingroom')!;
     const furnitureSinglesTs = map.addTilesetImage('furniture_singles', 'furniture_singles')!;
 
-    const allTs = [floorTs, wallTs, w3dTs, basementTs, doorTs, classTs, genThemeTs, confTs, lrTs, furnitureSinglesTs];
+    const allTs = [floorTs, wallTs, w3dTs, shadowsTs, basementTs, doorTs, classTs, genThemeTs, confTs, lrTs, furnitureSinglesTs];
 
     map.createLayer('floor', allTs)!.setDepth(0);
     map.createLayer('walls', allTs)!.setDepth(1);
