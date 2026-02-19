@@ -31,6 +31,7 @@ export class HQScene extends Phaser.Scene {
     this.load.image('generic_theme', `${THEME_BASE}/1_Generic_32x32.png`);
     this.load.image('conference', `${THEME_BASE}/13_Conference_Hall_32x32.png`);
     this.load.image('livingroom', `${THEME_BASE}/2_LivingRoom_32x32.png`);
+    this.load.image('furniture_singles', 'assets/tilesets/limezu/furniture_singles.png');
   }
 
   create() {
@@ -44,8 +45,9 @@ export class HQScene extends Phaser.Scene {
     const genThemeTs = map.addTilesetImage('generic_theme', 'generic_theme')!;
     const confTs = map.addTilesetImage('conference', 'conference')!;
     const lrTs = map.addTilesetImage('livingroom', 'livingroom')!;
+    const furnitureSinglesTs = map.addTilesetImage('furniture_singles', 'furniture_singles')!;
 
-    const allTs = [floorTs, wallTs, w3dTs, basementTs, doorTs, classTs, genThemeTs, confTs, lrTs];
+    const allTs = [floorTs, wallTs, w3dTs, basementTs, doorTs, classTs, genThemeTs, confTs, lrTs, furnitureSinglesTs];
 
     map.createLayer('floor', allTs)!.setDepth(0);
     map.createLayer('walls', allTs)!.setDepth(1);
