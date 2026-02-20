@@ -1,9 +1,10 @@
-// Rex Status API — Cloudflare Worker
+// Rex Status API — Cloudflare Worker + KV
 // GET /  → returns {"status":"idle|typing|working"}
 // PUT /  → sets status from JSON body {"status":"typing"}
-// In-memory state (resets on cold start to "idle" which is fine)
 
-let currentStatus = 'idle';
+export interface Env {
+  STATUS_KV: KVNamespace;
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ const CORS = {
 };
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS });
     }
@@ -21,11 +22,22 @@ export default {
     if (request.method === 'PUT') {
       try {
         const body = await request.json() as { status?: string };
-        currentStatus = body.status || 'idle';
-      } catch { /* ignore */ }
+        const status = body.status || 'idle';
+        await env.STATUS_KV.put('current', status);
+        return new Response(JSON.stringify({ status }), {
+          headers: { ...CORS, 'Content-Type': 'application/json' },
+        });
+      } catch {
+        return new Response(JSON.stringify({ error: 'bad request' }), {
+          status: 400,
+          headers: { ...CORS, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
-    return new Response(JSON.stringify({ status: currentStatus }), {
+    // GET
+    const status = (await env.STATUS_KV.get('current')) || 'idle';
+    return new Response(JSON.stringify({ status }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   },
