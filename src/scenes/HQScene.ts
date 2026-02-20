@@ -944,13 +944,13 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setPosition(this.player.x, this.player.y - 20);
     this.statusBubble.setDepth(this.player.depth + 1);
     // Show bubble only when at desk working/typing
-    this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle');
+    this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle' && this.currentActivity === 'desk');
 
     // Debug overlay
     const col = Math.floor(this.player.x / T);
     const feetRow = Math.floor((this.player.y + 23) / T);
     this.debugText.setText(
-      `status:${this.rexStatus} act:${this.currentActivity}\n` +
+      `st:${this.rexStatus} act:${this.currentActivity} pend:${this.pendingTarget||'-'}\n` +
       `pos:(${col},${feetRow}) wp:${this.waypoints.length} arr:${this.autoArrived}`
     );
 
