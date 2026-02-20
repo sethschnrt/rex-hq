@@ -924,6 +924,17 @@ export class HQScene extends Phaser.Scene {
         }
         moving = true;
       }
+    } else if (this.waypoints.length === 0 && !this.autoArrived) {
+      // Stuck state recovery: no waypoints but not arrived — force arrival
+      this.autoArrived = true;
+      if (this.rexStatus !== 'idle') {
+        this.navigateTo('desk');
+      } else {
+        this.pickIdleActivity();
+      }
+    } else if (this.autoArrived && this.rexStatus !== 'idle' && this.currentActivity !== 'desk') {
+      // Status changed to typing/working but Rex is at an idle spot — go to desk
+      this.navigateTo('desk');
     } else if (this.autoArrived && this.rexStatus === 'idle' && this.idleLingerUntil > 0 && time > this.idleLingerUntil) {
       // ── Linger expired — pick a new idle spot ──
       this.idleLingerUntil = 0;
