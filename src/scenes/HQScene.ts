@@ -71,7 +71,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   7005: 'none', 7006: 'none', 7007: 'none', 7008: 'none', // r12: desk surface (monitors)
   7015: 'full', 7016: 'full',   // r13c0-1: desk body (upper pair)
   7017: 'full', 7018: 'full',   // r13c2-3: desk body (lower pair)
-  7025: 'chair', 7026: 'chair', 7027: 'chair', 7028: 'chair', // r14: office chairs
+  7025: 'chair', 7026: 'chair', 7027: 'none', 7028: 'none', // r14: bottom office chairs — removed per Seth
   7035: 'none', 7036: 'none', 7037: 'none', 7038: 'none', // wall monitors
   7039: 'none', 7040: 'none', 7041: 'none', 7042: 'none',
   7043: 'none', 7044: 'none', 7045: 'none', 7046: 'none',

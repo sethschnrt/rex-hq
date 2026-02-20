@@ -127,7 +127,7 @@ COLLISION_SHAPES = {
     6977:'bottom',6978:'bottom',6979:'chair',6980:'chair',6983:'chair',6984:'chair',
     6989:'chair',6990:'chair',6999:'chair',7000:'chair',7005:'none',7006:'none',
     7007:'none',7008:'none',7015:'full',7016:'full',7017:'full',7018:'full',
-    7025:'chair',7026:'chair',7027:'chair',7028:'chair',
+    7025:'chair',7026:'chair',7027:'none',7028:'none',
     7035:'none',7036:'none',7037:'none',7038:'none',7039:'none',7040:'none',
     7041:'none',7042:'none',7043:'none',7044:'none',7045:'none',7046:'none',
     7047:'none',7048:'none',7049:'none',7050:'none',7051:'none',7052:'none',
