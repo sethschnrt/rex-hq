@@ -81,11 +81,11 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   7065: 'none', 7066: 'none', 7067: 'none', // r18: palm top
   7068: 'none', 7069: 'none', 7070: 'none',
   7071: 'none', 7072: 'none', 7073: 'none',
-  7075: 'none', 7076: 'none', 7077: 'none', // r19: palm middle
-  7078: 'none', 7079: 'none', 7080: 'none',
-  7081: 'none', 7082: 'none', 7083: 'none',
-  7085: 'full', 7086: 'full', 7087: 'full', // r20: palm pot/base — restored per Seth
-  7088: 'full', 7089: 'full', 7090: 'full', // restored per Seth
+  7075: 'none', 7076: 'full', 7077: 'none', // r19: palm middle (7076=pot)
+  7078: 'none', 7079: 'full', 7080: 'none', // 7079=pot
+  7081: 'none', 7082: 'full', 7083: 'none', // 7082=pot
+  7085: 'none', 7086: 'none', 7087: 'none', // r20: palm base (empty tiles)
+  7088: 'none', 7089: 'none', 7090: 'none', // r20: palm base (empty tiles)
 
   // ── Kitchen ──
   7095: 'bottom', // r21c0: counter bottom
