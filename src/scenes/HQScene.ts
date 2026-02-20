@@ -149,7 +149,7 @@ type RexStatus = 'working' | 'typing' | 'idle';
 // All positions use feet-corrected Y: py = row*32 - 7
 function rc(col: number, row: number): Pt { return { x: col * T + T / 2, y: row * T - 7 }; }
 
-const DESK_POS = rc(5, 5);  // on desk chair, facing up toward monitors
+const DESK_POS = { x: 4 * 32 + 32, y: 5 * 32 - 7 };  // between col 4-5, on desk chair
 const STATUS_POLL_MS = 5000;
 const ARRIVE_THRESHOLD = 6;
 const AUTO_SPEED = SPEED;
@@ -185,7 +185,7 @@ const IDLE_ACTIVITIES: IdleActivity[] = [
  */
 const W = {
   // Office → door
-  DESK:     rc(5, 5),   // A — on desk chair
+  DESK:     { x: 160, y: 5 * 32 - 7 },   // A — on desk chair (col 4.5)
   DESK_R:   rc(7, 5),   // A1 — right of desk (avoid chair collision at 5,6)
   OFF_HALL: rc(7, 7),   // A2 — below desk area, on glass row
   DOOR_TL:  rc(3, 7),   // B — at top-left door
@@ -247,7 +247,7 @@ function spineIndex(pt: Pt): number {
 
 function buildRoute(fromName: string, toName: string): Pt[] {
   // Special case: painting ↔ desk (both in office, direct route)
-  if (fromName === 'look_painting' && toName === 'desk') return [rc(1, 5), rc(5, 5)];
+  if (fromName === 'look_painting' && toName === 'desk') return [rc(1, 5), DESK_POS];
   if (fromName === 'desk' && toName === 'look_painting') return [rc(1, 5), rc(1, 4)];
 
   const exit = TO_SPINE[fromName];
