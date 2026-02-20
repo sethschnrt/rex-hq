@@ -38,6 +38,8 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   6899: 'none', 6900: 'none',   // r1: painting bottom
   6901: 'chair', 6902: 'chair', // r1: chair bottom
   6905: 'bottom', 6906: 'bottom', 6907: 'bottom', 6908: 'bottom', // r2: desk body base
+  // Bookshelf (#15-16) — livingroom tileset
+  6591: 'bottom', 6592: 'bottom', // bookshelf base row
   6920: 'none',  // r3c5: plant top (pot at row below)
   6930: 'bottom', // r4c5: plant pot
 
