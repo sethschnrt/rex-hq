@@ -283,21 +283,30 @@ export class HQScene extends Phaser.Scene {
         sprite.setDepth(10 + (row + 1) * T);
         this.furnitureSprites.push(sprite);
 
-        // Per-GID collision shape
+        // Per-GID collision shape — use explicit world positions
         const shape = COLLISION_SHAPES[gid] ?? 'full';
         if (shape !== 'none') {
-          const body = this.furnitureColliders.create(wx, wy) as Phaser.Physics.Arcade.Sprite;
-          body.setVisible(false);
+          // Tile top-left in world coords
+          const tx0 = col * T;
+          const ty0 = row * T;
+          let bx: number, by: number, bw: number, bh: number;
+
           if (shape === 'chair') {
-            body.body!.setSize(16, 16);
-            body.body!.setOffset(8, 8);
+            bw = 16; bh = 16;
+            bx = tx0 + 8; by = ty0 + 8; // centered
           } else if (shape === 'bottom') {
-            body.body!.setSize(T, 16);
-            body.body!.setOffset(0, 16);
+            bw = T; bh = 16;
+            bx = tx0; by = ty0 + 16; // bottom half
           } else {
-            body.body!.setSize(T, T);
+            bw = T; bh = T;
+            bx = tx0; by = ty0;
           }
-          body.refreshBody();
+
+          // Create a zone at center of collision area, then enable static physics
+          const zone = this.add.zone(bx + bw / 2, by + bh / 2, bw, bh);
+          this.physics.add.existing(zone, true); // true = static
+          (zone.body as Phaser.Physics.Arcade.StaticBody).setSize(bw, bh);
+          this.furnitureColliders.add(zone);
         }
       }
     }
