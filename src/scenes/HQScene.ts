@@ -55,7 +55,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   6935: 'bottom', 6936: 'bottom', // r5c0-1: couch base
   6938: 'bottom', 6939: 'bottom', // r5c3-4: couch base
   6941: 'full', 6942: 'full', 6943: 'none', // r5c6-8: TV unit bottom (6943 removed per Seth)
-  6951: 'bottom', 6952: 'bottom', 6953: 'bottom', // r6c6-8: TV unit base
+  6951: 'none', 6952: 'none', 6953: 'none', // r6c6-8: TV unit base — removed per Seth
 
   // ── Conference ──
   6965: 'bottom', 6966: 'bottom', 6967: 'bottom', 6968: 'bottom', // r8c0-3: table top
