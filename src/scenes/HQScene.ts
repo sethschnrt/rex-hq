@@ -145,7 +145,7 @@ type RexStatus = 'working' | 'typing' | 'idle';
 
 // Feet-corrected positions: py = row*32 - 7 puts feet center in that row
 const DESK_POS   = { x: 7 * T + T / 2, y: 5 * T - 7 };  // feet in row 5 (open, right of desk)
-const COUCH_POS  = { x: 12 * T + T / 2, y: 19 * T - 7 }; // feet in row 19 (between couches)
+const COUCH_POS  = { x: 13 * T + T / 2, y: 19 * T - 7 }; // feet in row 19, on right couch facing TV
 const STATUS_POLL_MS = 5000;
 const ARRIVE_THRESHOLD = 6;
 const AUTO_SPEED = SPEED;
@@ -182,8 +182,8 @@ const WP = {
   H: { x: 13 * T + T / 2, y: 15 * T - 7 }, // feet in row 15 (door)
   // Down through door to row 17
   I: { x: 13 * T + T / 2, y: 17 * T - 7 }, // feet in row 17
-  // Left to col 12 (lounge gap between couches)
-  J: { x: 12 * T + T / 2, y: 17 * T - 7 }, // feet in row 17
+  // Col 13 — same X as couch destination, then walk straight down
+  J: { x: 13 * T + T / 2, y: 17 * T - 7 }, // feet in row 17
 };
 
 function buildRoute(from: Pt, to: Pt): Pt[] {
@@ -827,8 +827,8 @@ export class HQScene extends Phaser.Scene {
         this.waypoints.shift();
         if (this.waypoints.length === 0) {
           this.autoArrived = true;
-          // Face desk (left) or TV (up)
-          this.lastDir = this.rexStatus === 'idle' ? 'up' : 'left';
+          // Face desk (left) or TV (left — TV is west of couch)
+          this.lastDir = 'left';
         }
       } else {
         // Move one axis at a time — no diagonal (RPG style)
