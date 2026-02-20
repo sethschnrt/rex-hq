@@ -137,31 +137,16 @@ interface GlassDoor {
 }
 
 /* ── Rex activity states ──
- * 'idle'    — lounging, wanders between relaxation spots
- * 'working' — at his desk, coding/building
- * 'typing'  — actively responding to a message
- * 'chatting' — conversing with another agent (future)
+ * 'working' — at desk, building/deploying (wrench bubble)
+ * 'typing'  — at desk, actively writing a reply (dots bubble)
  */
-type RexStatus = 'idle' | 'working' | 'typing' | 'chatting';
+type RexStatus = 'working' | 'typing';
 
-// Key positions in pixel coords (center of tile)
-const DESK_POS   = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 }; // Rex's chair at desk
-const LOUNGE_POS = { x: 14 * T + T / 2, y: 18 * T + T / 2 };  // lounge couch area
-const KITCHEN_POS = { x: 5 * T + T / 2, y: 18 * T + T / 2 };  // kitchen hang
-const CONF_POS   = { x: 14 * T + T / 2, y: 4 * T + T / 2 };   // conference room
-const IDLE_SPOTS = [LOUNGE_POS, KITCHEN_POS, CONF_POS];
-const STATUS_POLL_MS = 5000; // poll rex-status.json every 5s
-const ARRIVE_THRESHOLD = 4; // px from target to consider "arrived"
-const AUTO_SPEED = 60;      // slower than player-controlled (100)
-const IDLE_LINGER_MS = 8000; // how long to hang at an idle spot before moving
-const MANUAL_OVERRIDE_MS = 3000; // after last keypress, wait this long before resuming auto
-
-const STATUS_ICONS: Record<RexStatus, string> = {
-  idle: '😴',
-  working: '💻',
-  typing: '💬',
-  chatting: '🗣️',
-};
+// Rex's desk chair position (center of tile)
+const DESK_POS = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 };
+const STATUS_POLL_MS = 5000;
+const ARRIVE_THRESHOLD = 4;
+const AUTO_SPEED = SPEED; // same walking pace
 
 export class HQScene extends Phaser.Scene {
   public player!: Phaser.Physics.Arcade.Sprite;
@@ -176,13 +161,11 @@ export class HQScene extends Phaser.Scene {
   private touchDir = { x: 0, y: 0 };
 
   // ── Autonomous behavior ──
-  private rexStatus: RexStatus = 'idle';
-  private statusBubble!: Phaser.GameObjects.Text;
+  private rexStatus: RexStatus = 'working';
+  private statusBubble!: Phaser.GameObjects.Sprite;
   private autoTarget: { x: number; y: number } | null = null;
   private autoArrived = false;
-  private autoLingerTimer = 0;
   private lastManualInput = 0;
-  private lastStatusPoll = 0;
 
   constructor() {
     super({ key: 'HQScene' });
@@ -201,6 +184,10 @@ export class HQScene extends Phaser.Scene {
     this.load.image('conference', `${THEME_BASE}/13_Conference_Hall_32x32.png`);
     this.load.image('livingroom', `${THEME_BASE}/2_LivingRoom_32x32.png`);
     this.load.image('furniture_singles', 'assets/tilesets/limezu/furniture_singles.png');
+
+    this.load.spritesheet('emotes', 'assets/tilesets/limezu/4_User_Interface_Elements/UI_thinking_emotes_animation_32x32.png', {
+      frameWidth: 32, frameHeight: 32,
+    });
 
     this.load.spritesheet('rex-walk', 'assets/sprites/rex-walk.png', {
       frameWidth: T,
@@ -556,13 +543,30 @@ export class HQScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, MAP_PX_W, MAP_PX_H);
 
-    // ── Status bubble above Rex ──
-    this.statusBubble = this.add.text(0, 0, '', {
-      fontSize: '16px',
-      padding: { x: 2, y: 2 },
-    }).setOrigin(0.5, 1).setDepth(99999);
+    // ── Emote animations (UI_thinking_emotes_animation_32x32.png, 10 cols) ──
+    // Typing dots: frames build up dots then hold — row 0-1 cols 0-3
+    // Frame indices: row*10+col → (0,0)=0 empty, (1,0)=10 1-dot, (1,1)=11 2-dots, (1,2)=12 3-dots, (1,3)=13 3-dots-alt
+    this.anims.create({
+      key: 'emote-typing',
+      frames: this.anims.generateFrameNumbers('emotes', { frames: [0, 10, 11, 12, 13, 12, 13] }),
+      frameRate: 4,
+      repeat: -1,
+    });
+    // Working wrench: row 4 cols 4-5 → frame 44, 45
+    this.anims.create({
+      key: 'emote-working',
+      frames: this.anims.generateFrameNumbers('emotes', { frames: [44, 45] }),
+      frameRate: 2,
+      repeat: -1,
+    });
 
-    // ── Start status polling ──
+    // ── Status bubble above Rex ──
+    this.statusBubble = this.add.sprite(0, 0, 'emotes', 44);
+    this.statusBubble.setOrigin(0.5, 1).setDepth(99999);
+    this.statusBubble.play('emote-working');
+
+    // ── Start status polling + auto-walk to desk ──
+    this.autoTarget = { ...DESK_POS };
     this.pollStatus();
 
     // ── Input: WASD only (arrow keys conflict with browser scroll) ──
@@ -681,36 +685,14 @@ export class HQScene extends Phaser.Scene {
       const res = await fetch('rex-status.json?t=' + Date.now());
       if (res.ok) {
         const data = await res.json();
-        const newStatus = (data.status || 'idle') as RexStatus;
+        const newStatus = (data.status || 'working') as RexStatus;
         if (newStatus !== this.rexStatus) {
           this.rexStatus = newStatus;
-          this.onStatusChange();
+          this.statusBubble.play('emote-' + this.rexStatus);
         }
       }
     } catch { /* ignore fetch errors */ }
     this.time.delayedCall(STATUS_POLL_MS, () => this.pollStatus());
-  }
-
-  private onStatusChange() {
-    this.autoArrived = false;
-    this.autoLingerTimer = 0;
-    // Pick target based on status
-    if (this.rexStatus === 'working' || this.rexStatus === 'typing') {
-      this.autoTarget = { ...DESK_POS };
-    } else if (this.rexStatus === 'idle') {
-      this.pickIdleSpot();
-    }
-  }
-
-  private pickIdleSpot() {
-    const spot = IDLE_SPOTS[Math.floor(Math.random() * IDLE_SPOTS.length)];
-    this.autoTarget = { ...spot };
-    this.autoArrived = false;
-  }
-
-  private getFacingDir(status: RexStatus): string {
-    if (status === 'working' || status === 'typing') return 'up'; // facing desk
-    return this.lastDir;
   }
 
   update(time: number, delta: number) {
@@ -721,78 +703,61 @@ export class HQScene extends Phaser.Scene {
 
     const manualInput = up || down || left || right;
     if (manualInput) this.lastManualInput = time;
-    const manualOverride = (time - this.lastManualInput) < MANUAL_OVERRIDE_MS;
 
     let vx = 0;
     let vy = 0;
     let moving = false;
 
-    if (manualOverride && manualInput) {
+    if (manualInput) {
       // ── Manual control ──
       const mx = (left ? -1 : 0) + (right ? 1 : 0);
       const my = (up ? -1 : 0) + (down ? 1 : 0);
       vx = mx * SPEED;
       vy = my * SPEED;
       if (mx !== 0 && my !== 0) { vx *= 0.707; vy *= 0.707; }
-      moving = mx !== 0 || my !== 0;
-      if (moving) {
-        if (mx !== 0 && my === 0) this.lastDir = mx < 0 ? 'left' : 'right';
-        else if (my !== 0 && mx === 0) this.lastDir = my < 0 ? 'up' : 'down';
-        else this.lastDir = mx < 0 ? 'left' : 'right';
-      }
-    } else if (!manualOverride && this.autoTarget) {
-      // ── Autonomous movement ──
-      if (!this.autoArrived) {
-        const dx = this.autoTarget.x - this.player.x;
-        const dy = this.autoTarget.y - this.player.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      moving = true;
+      if (mx !== 0 && my === 0) this.lastDir = mx < 0 ? 'left' : 'right';
+      else if (my !== 0 && mx === 0) this.lastDir = my < 0 ? 'up' : 'down';
+      else if (mx !== 0) this.lastDir = mx < 0 ? 'left' : 'right';
+      // Reset auto so Rex walks back to desk after manual control ends
+      this.autoArrived = false;
+    } else if (this.autoTarget && !this.autoArrived) {
+      // ── Auto-walk to desk ──
+      const dx = this.autoTarget.x - this.player.x;
+      const dy = this.autoTarget.y - this.player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < ARRIVE_THRESHOLD) {
-          this.autoArrived = true;
-          this.autoLingerTimer = 0;
-          // Face appropriate direction
-          if (this.rexStatus === 'working' || this.rexStatus === 'typing') {
-            this.lastDir = 'up'; // face desk
-          }
+      if (dist < ARRIVE_THRESHOLD) {
+        this.autoArrived = true;
+        this.lastDir = 'up'; // face desk
+      } else {
+        vx = (dx / dist) * AUTO_SPEED;
+        vy = (dy / dist) * AUTO_SPEED;
+        moving = true;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          this.lastDir = dx < 0 ? 'left' : 'right';
         } else {
-          // Move toward target
-          vx = (dx / dist) * AUTO_SPEED;
-          vy = (dy / dist) * AUTO_SPEED;
-          moving = true;
-          // Update facing based on dominant axis
-          if (Math.abs(dx) > Math.abs(dy)) {
-            this.lastDir = dx < 0 ? 'left' : 'right';
-          } else {
-            this.lastDir = dy < 0 ? 'up' : 'down';
-          }
-        }
-      } else if (this.rexStatus === 'idle') {
-        // Linger at idle spot, then pick a new one
-        this.autoLingerTimer += delta;
-        if (this.autoLingerTimer > IDLE_LINGER_MS) {
-          this.pickIdleSpot();
+          this.lastDir = dy < 0 ? 'up' : 'down';
         }
       }
-      // Working/typing: stay at desk (autoArrived = true, no movement)
     }
+    // When autoArrived and no manual input: Rex sits at desk idle-up
 
     this.player.setVelocity(vx, vy);
-
-    // Y-sort: depth based on Rex's feet (bottom of collision box)
     this.player.setDepth(10 + this.player.y + 30);
 
     if (moving) {
       this.player.anims.play('walk-' + this.lastDir, true);
     } else {
-      const dir = this.autoArrived ? this.getFacingDir(this.rexStatus) : this.lastDir;
+      const dir = this.autoArrived ? 'up' : this.lastDir;
       this.player.anims.play('idle-' + dir, true);
     }
 
     // ── Status bubble follows Rex ──
-    const icon = STATUS_ICONS[this.rexStatus];
-    this.statusBubble.setText(icon);
     this.statusBubble.setPosition(this.player.x, this.player.y - 34);
     this.statusBubble.setDepth(this.player.depth + 1);
+    // Only show bubble when seated at desk
+    this.statusBubble.setVisible(this.autoArrived && !manualInput);
 
     // Glass z-index
     const feetY = this.player.y + 30;
