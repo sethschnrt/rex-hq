@@ -292,6 +292,7 @@ export class HQScene extends Phaser.Scene {
   private currentActivity = 'desk';       // name of current/target location
   private idleLingerUntil = 0;            // timestamp when Rex should pick a new idle spot
   private lastIdleActivity = '';          // avoid picking the same spot twice in a row
+  private debugText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'HQScene' });
@@ -692,9 +693,15 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setOrigin(0.5, 1).setDepth(99999);
     this.statusBubble.setVisible(false);
 
+    // Debug overlay (temporary)
+    this.debugText = this.add.text(4, 4, '', { fontSize: '10px', color: '#0f0', backgroundColor: '#000a' })
+      .setScrollFactor(0).setDepth(999999);
+
     // ── Start status polling + pick first idle activity ──
     this.currentActivity = 'desk';
-    this.pickIdleActivity();
+    this.lastDir = 'left';
+    // Wait a moment before starting to roam (let physics settle)
+    this.time.delayedCall(2000, () => this.pickIdleActivity());
     this.pollStatus();
 
     // ── Input: WASD only (arrow keys conflict with browser scroll) ──
@@ -831,7 +838,6 @@ export class HQScene extends Phaser.Scene {
       if (res.ok) {
         const data = await res.json();
         const newStatus = (data.status || 'idle') as RexStatus;
-        console.log('[Rex] status poll:', newStatus, 'current:', this.rexStatus);
         if (newStatus !== this.rexStatus) {
           this.rexStatus = newStatus;
           if (newStatus === 'idle') {
@@ -842,8 +848,6 @@ export class HQScene extends Phaser.Scene {
             this.statusBubble.play('emote-' + newStatus);
           }
         }
-      } else {
-        console.warn('[Rex] status poll failed:', res.status);
       }
     } catch { /* ignore fetch errors */ }
     this.time.delayedCall(STATUS_POLL_MS, () => this.pollStatus());
@@ -926,6 +930,14 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setDepth(this.player.depth + 1);
     // Show bubble only when at desk working/typing
     this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle');
+
+    // Debug overlay
+    const col = Math.floor(this.player.x / T);
+    const feetRow = Math.floor((this.player.y + 23) / T);
+    this.debugText.setText(
+      `status:${this.rexStatus} act:${this.currentActivity}\n` +
+      `pos:(${col},${feetRow}) wp:${this.waypoints.length} arr:${this.autoArrived}`
+    );
 
     // Glass z-index
     const feetY = this.player.y + 30;
