@@ -284,7 +284,6 @@ export class HQScene extends Phaser.Scene {
           6969, 6970, 6979, 6980, // north conference chairs
           6973, 6974, 6983, 6984, // right conference chairs (side)
           6989, 6990, 6999, 7000, // left conference chairs (side)
-          6971, 6972,             // south conference chairs
           6915, 6916, 6918, 6919, // couch tops
           6925, 6926, 6928, 6929, // couch middles
           6935, 6936, 6938,       // couch bases
