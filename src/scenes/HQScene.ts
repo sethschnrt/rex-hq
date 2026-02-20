@@ -502,24 +502,31 @@ export class HQScene extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.wallLayer);
     this.physics.add.collider(this.player, this.walls3dLayer);
-    // Glass is one-way: Rex can walk INTO the glass from the north (appears behind it)
-    // but cannot walk THROUGH it — stops at the bottom edge.
-    // From the south, blocked at the top edge.
-    //
-    // Glass sections: rows 7-8 (Y 224-288) and rows 15-16 (Y 480-544)
-    // Strategy: only collide with the BOTTOM ROW of each section (row 8, row 16)
-    // and only when Rex's feet are near that bottom edge.
-    // The TOP ROW tiles (row 7, row 15) never collide — Rex walks freely into them.
-    const GLASS_BOTTOM_ROWS = new Set([8, 16]); // bottom row of each glass section
-    this.physics.add.collider(this.player, this.glassLayer, undefined, (_player, _tile) => {
-      const t = _tile as Phaser.Tilemaps.Tile;
-      // Top row of glass sections: NEVER collide (Rex walks into these from north)
-      if (!GLASS_BOTTOM_ROWS.has(t.y)) {
-        return false;
-      }
-      // Bottom row: ALWAYS collide (prevents walking through from either direction)
-      return true;
+    // Glass: disable ALL tilemap collision — we handle it with custom bodies
+    this.glassLayer.setCollisionByExclusion([]); // clear all collision
+    this.glassLayer.forEachTile((tile: Phaser.Tilemaps.Tile) => {
+      tile.setCollision(false, false, false, false);
     });
+
+    // Create custom collision bodies for glass:
+    // - Top row (7, 15): NO collision — Rex walks into these from north, appears behind glass
+    // - Bottom row (8, 16): Full collision — prevents walking through
+    const glassBottomRows = [8, 16];
+    const glassColliders = this.physics.add.staticGroup();
+    const glassLD = map.getLayer('glass')!;
+    for (const row of glassBottomRows) {
+      for (let col = 0; col < MAP_W; col++) {
+        const td = glassLD.data[row][col];
+        if (!td || td.index <= 0) continue;
+        // Skip door tiles
+        if (DOOR_TILE_GIDS.has(td.index)) continue;
+        const zone = this.add.zone(col * T + T / 2, row * T + T / 2, T, T);
+        this.physics.add.existing(zone, true);
+        (zone.body as Phaser.Physics.Arcade.StaticBody).setSize(T, T);
+        glassColliders.add(zone);
+      }
+    }
+    this.physics.add.collider(this.player, glassColliders);
     this.physics.add.collider(this.player, this.furnitureColliders);
 
     this.physics.world.setBounds(0, 0, MAP_PX_W, MAP_PX_H);
