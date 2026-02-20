@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-// Status endpoint — set via VITE_STATUS_URL env var, falls back to local file
-const REX_STATUS_URL = import.meta.env.VITE_STATUS_URL || 'rex-status.json';
+// Status endpoint — Cloudflare Worker (CORS-enabled, real-time)
+const REX_STATUS_URL = 'https://rex-status.rex-hq.workers.dev';
 
 const T = 32;
 const MAP_W = 20;
