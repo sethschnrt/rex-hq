@@ -5,92 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rex HQ</title>
   <style>
-    @font-face {
-      font-family: 'PixelFont';
-      src: url('https://fonts.gstatic.com/s/pressstart2p/v15/e3t4euO8T-267oIAQAu6jDQyK3nVivM.woff2') format('woff2');
-    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #1a1a2e; }
+    html, body { width: 100%; height: 100%; background: #0d1117; }
     #game-container { width: 100%; }
     canvas { display: block; width: 100% !important; height: auto !important; }
-
-    /* Pixel art rendering */
     .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 
-    /* Password gate */
     #auth-gate {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      font-family: 'Press Start 2P', 'PixelFont', monospace;
-      color: #e0e0e0;
+      font-family: 'Press Start 2P', monospace;
+      color: #c9d1d9;
       background: #0d1117;
-      position: relative;
-      overflow: hidden;
     }
 
-    /* Scanline overlay */
-    #auth-gate::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.08) 2px,
-        rgba(0, 0, 0, 0.08) 4px
-      );
-      pointer-events: none;
-    }
-
-    /* Pixel border box */
     .login-box {
-      position: relative;
       background: #161b22;
-      border: 4px solid #4fc3f7;
-      padding: 2.5rem 2rem 2rem;
+      border: 3px solid #30363d;
+      padding: 2.5rem 2.5rem 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow:
-        0 0 0 4px #0d1117,
-        0 0 0 8px #333,
-        0 0 40px rgba(79, 195, 247, 0.15);
-    }
-
-    /* Corner decorations */
-    .login-box::before {
-      content: '';
-      position: absolute;
-      top: -8px; left: -8px; right: -8px; bottom: -8px;
-      border: 4px solid transparent;
-      border-image: repeating-linear-gradient(
-        90deg, #4fc3f7 0px, #4fc3f7 8px, transparent 8px, transparent 16px
-      ) 4;
-      pointer-events: none;
     }
 
     .rex-sprite {
       width: 64px;
       height: 128px;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
 
     #auth-gate h1 {
-      font-size: 1.1rem;
-      letter-spacing: 4px;
-      margin-bottom: 0.25rem;
-      color: #4fc3f7;
-      text-shadow: 2px 2px 0 #0a2a3a, 0 0 20px rgba(79, 195, 247, 0.4);
+      font-size: 1.2rem;
+      letter-spacing: 6px;
+      margin-bottom: 0.5rem;
+      color: #e6edf3;
     }
 
     .subtitle {
-      font-size: 0.45rem;
-      color: #555;
-      margin-bottom: 1.5rem;
+      font-size: 0.4rem;
+      color: #8b949e;
+      margin-bottom: 2rem;
       letter-spacing: 2px;
     }
 
@@ -102,113 +59,68 @@
     }
 
     #auth-form input {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.6rem;
-      font-family: 'Press Start 2P', 'PixelFont', monospace;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.55rem;
+      font-family: 'Press Start 2P', monospace;
       background: #0d1117;
-      border: 3px solid #333;
-      color: #e0e0e0;
+      border: 2px solid #30363d;
+      color: #c9d1d9;
       outline: none;
-      width: 200px;
+      width: 210px;
       text-align: center;
     }
 
     #auth-form input:focus {
-      border-color: #4fc3f7;
-      box-shadow: 0 0 12px rgba(79, 195, 247, 0.25);
+      border-color: #58a6ff;
     }
 
     #auth-form input::placeholder {
-      color: #444;
+      color: #484f58;
     }
 
     #auth-form button {
       padding: 0.5rem 1.5rem;
-      font-size: 0.55rem;
-      font-family: 'Press Start 2P', 'PixelFont', monospace;
-      background: #4fc3f7;
-      color: #0d1117;
-      border: 3px solid #81d4fa;
+      font-size: 0.5rem;
+      font-family: 'Press Start 2P', monospace;
+      background: #238636;
+      color: #fff;
+      border: 2px solid #2ea043;
       cursor: pointer;
       letter-spacing: 2px;
-      transition: all 0.1s;
     }
 
     #auth-form button:hover {
-      background: #81d4fa;
-      transform: scale(1.05);
+      background: #2ea043;
     }
 
     #auth-form button:active {
-      transform: scale(0.95);
+      transform: scale(0.97);
     }
 
     #auth-error {
-      color: #ef5350;
-      font-size: 0.45rem;
-      margin-top: 0.5rem;
+      color: #f85149;
+      font-size: 0.4rem;
+      margin-top: 0.75rem;
       min-height: 1em;
-      text-shadow: 1px 1px 0 #2a0a0a;
-    }
-
-    /* Blinking cursor effect */
-    .blink {
-      font-size: 0.5rem;
-      color: #4fc3f7;
-      margin-top: 1.5rem;
-      animation: blink 1s step-end infinite;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    /* Floating pixels background */
-    .bg-pixel {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: #4fc3f7;
-      opacity: 0.1;
-      animation: float linear infinite;
-    }
-    @keyframes float {
-      0% { transform: translateY(100vh); opacity: 0; }
-      10% { opacity: 0.15; }
-      90% { opacity: 0.15; }
-      100% { transform: translateY(-20px); opacity: 0; }
     }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Password gate -->
   <div id="auth-gate">
-    <!-- Floating background pixels -->
-    <div class="bg-pixel" style="left:10%;animation-duration:8s;animation-delay:0s"></div>
-    <div class="bg-pixel" style="left:25%;animation-duration:12s;animation-delay:2s"></div>
-    <div class="bg-pixel" style="left:40%;animation-duration:10s;animation-delay:1s"></div>
-    <div class="bg-pixel" style="left:55%;animation-duration:14s;animation-delay:3s"></div>
-    <div class="bg-pixel" style="left:70%;animation-duration:9s;animation-delay:0.5s"></div>
-    <div class="bg-pixel" style="left:85%;animation-duration:11s;animation-delay:2.5s"></div>
-    <div class="bg-pixel" style="left:15%;animation-duration:13s;animation-delay:4s"></div>
-    <div class="bg-pixel" style="left:60%;animation-duration:7s;animation-delay:1.5s"></div>
-
     <div class="login-box">
       <img src="assets/sprites/rex-logo-full.png" class="rex-sprite pixel" alt="Rex" />
       <h1>REX HQ</h1>
-      <div class="subtitle">AUTHORIZED PERSONNEL ONLY</div>
+      <div class="subtitle">AUTHORIZED ACCESS ONLY</div>
       <form id="auth-form">
-        <input type="password" id="auth-pw" placeholder="ENTER PASSWORD" autocomplete="off" autofocus />
+        <input type="password" id="auth-pw" placeholder="PASSWORD" autocomplete="off" autofocus />
         <button type="submit">LOG IN</button>
       </form>
       <div id="auth-error"></div>
     </div>
-    <div class="blink">▶ PRESS ENTER TO CONTINUE</div>
   </div>
 
-  <!-- Game (hidden until authenticated) -->
   <div id="game-container"></div>
 
   <script>
