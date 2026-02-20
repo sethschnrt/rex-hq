@@ -134,7 +134,7 @@ COLLISION_SHAPES = {
     7053:'none',7054:'none',7065:'none',7066:'none',7067:'none',7068:'none',
     7069:'none',7070:'none',7071:'none',7072:'none',7073:'none',7075:'none',
     7076:'full',7077:'none',7078:'none',7079:'full',7080:'none',7081:'none',
-    7082:'full',7083:'none',
+    7082:'none',7083:'none',
     7085:'none',7086:'none',7087:'none',  # removed per Seth
     7088:'none',7089:'none',7090:'none',
     7091:'none',7092:'none',7093:'none',
