@@ -520,9 +520,9 @@ export class HQScene extends Phaser.Scene {
         if (!td || td.index <= 0) continue;
         // Skip door tiles
         if (DOOR_TILE_GIDS.has(td.index)) continue;
-        // Thin 8px strip at the TOP of the bottom glass row (right against the seam)
+        // Thin 8px strip at the BOTTOM of the bottom glass row
         const stripH = 8;
-        const zone = this.add.zone(col * T + T / 2, row * T + stripH / 2, T, stripH);
+        const zone = this.add.zone(col * T + T / 2, (row + 1) * T - stripH / 2, T, stripH);
         this.physics.add.existing(zone, true);
         (zone.body as Phaser.Physics.Arcade.StaticBody).setSize(T, stripH);
         glassColliders.add(zone);
