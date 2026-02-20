@@ -23,23 +23,28 @@ const THEME_BASE = 'assets/tilesets/limezu/1_Interiors/32x32/Theme_Sorter_32x32'
 const NO_COLLIDE_GIDS = new Set([
   // Rex's office desk — top surface row (monitors sit here, body row below collides)
   6885,6886,6887,6888, // Singles row 0 cols 0-3: desk surface
-  // Rex's office chair + art
-  6891,6892, // Row 0 cols 6-7: chair top (body at row 1)
   // Paintings/art on wall
   6889,6890, // Row 0 cols 4-5: painting top
   6899,6900, // Row 1 cols 4-5: painting bottom
-  // Conference chairs — tucked against/under table, not floor-blocking
-  6969,6970,6971,6972,6973,6974, // Singles row 8 cols 4-9: chair tops
-  6979,6980,6983,6984, // Singles row 9 cols 4-5, 8-9: chair bottoms (sides)
-  6989,6990, // Singles row 10 cols 4-5: left side chair top
-  6999,7000, // Singles row 11 cols 4-5: left side chair bottom
   // Main office desk TOP surface (monitors row) — body row below collides
   7005,7006,7007,7008, // Singles row 12: desk surface tiles
-  // Main office chairs — between desk pairs, in aisle zone
-  7025,7026,7027,7028, // Singles row 14: office chairs
   // Wall-mounted monitor (glass wall rows)
   7035,7036,7037,7038,7039,7040,7041,7042,7043,7044,
   7045,7046,7047,7048,7049,7050,7051,7052,7053,7054,
+]);
+
+/* Chairs get a small centered collision body (16x16) instead of full 32x32 */
+const CHAIR_GIDS = new Set([
+  // Rex's office chair
+  6891,6892, // Row 0 cols 6-7: chair top
+  6901,6902, // Row 1 cols 6-7: chair bottom
+  // Conference chairs — all directions
+  6969,6970,6971,6972,6973,6974, // Row 8: top/bottom chair tiles
+  6979,6980,6983,6984, // Row 9: side chair bottoms
+  6989,6990, // Row 10: left side chair top
+  6999,7000, // Row 11: left side chair bottom
+  // Main office chairs
+  7025,7026,7027,7028, // Row 14: office chairs
 ]);
 
 /* ── Glass door animation config ── */
@@ -209,11 +214,16 @@ export class HQScene extends Phaser.Scene {
         sprite.setDepth(10 + (row + 1) * T);
         this.furnitureSprites.push(sprite);
 
-        // Only add collision for floor-level obstacles
+        // Collision bodies: full tile for most furniture, small centered for chairs, none for wall-mounted
         if (!NO_COLLIDE_GIDS.has(gid)) {
           const body = this.furnitureColliders.create(wx, wy) as Phaser.Physics.Arcade.Sprite;
           body.setVisible(false);
-          body.body!.setSize(T, T);
+          if (CHAIR_GIDS.has(gid)) {
+            body.body!.setSize(16, 16);
+            body.body!.setOffset(8, 8);
+          } else {
+            body.body!.setSize(T, T);
+          }
           body.refreshBody();
         }
       }
