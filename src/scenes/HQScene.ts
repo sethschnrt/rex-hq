@@ -282,19 +282,14 @@ export class HQScene extends Phaser.Scene {
         // Furniture that Rex should always appear ON TOP of (rendered below player)
         const BELOW_PLAYER_GIDS = new Set([
           6969, 6970, 6979, 6980, // north conference chairs
+          6973, 6974, 6983, 6984, // right conference chairs (side)
+          6989, 6990, 6999, 7000, // left conference chairs (side)
+          6971, 6972,             // south conference chairs
           6915, 6916, 6918, 6919, // couch tops
           6925, 6926, 6928, 6929, // couch middles
           6935, 6936, 6938,       // couch bases
         ]);
-        // Multi-tile objects: top tile uses bottom tile's depth so Rex doesn't
-        // render between the halves ("phasing through"). Map: GID → depth row offset.
-        // Value = how many rows below this tile the bottom of the object is.
-        const DEPTH_ROW_BOOST: Record<number, number> = {
-          // Left conference chairs: backrest at row 4, seat at row 5 → top uses +1
-          6989: 1, 6990: 1,
-          // Right conference chairs: backrest at row 4, seat at row 5 → top uses +1
-          6973: 1, 6974: 1,
-        };
+        const DEPTH_ROW_BOOST: Record<number, number> = {};
         const depthRowOffset = DEPTH_ROW_BOOST[gid] ?? 0;
         const depthRow = row + depthRowOffset;
         // Depth = bottom edge of this tile (row+1)*T, offset by 10 to stay above floor layers
