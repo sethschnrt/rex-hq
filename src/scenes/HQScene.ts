@@ -279,11 +279,14 @@ export class HQScene extends Phaser.Scene {
         dt.refresh();
 
         const sprite = this.add.sprite(wx, wy, tileKey);
+        // Furniture that Rex should always appear ON TOP of (rendered below player)
+        const BELOW_PLAYER_GIDS = new Set([6969, 6970, 6979, 6980]); // north conference chairs
         // Depth = bottom edge of this tile (row+1)*T, offset by 10 to stay above floor layers
         // Palm/furniture on glass rows (7-8, 15-16) get boosted depth so they
         // always render above the glass layer even when it's dynamically raised
         const isGlassRow = (row >= 7 && row <= 8) || (row >= 15 && row <= 16);
-        sprite.setDepth(isGlassRow ? 9000 + (row + 1) * T : 10 + (row + 1) * T);
+        const belowPlayer = BELOW_PLAYER_GIDS.has(gid);
+        sprite.setDepth(belowPlayer ? 4 : isGlassRow ? 9000 + (row + 1) * T : 10 + (row + 1) * T);
         this.furnitureSprites.push(sprite);
 
         // Per-GID collision shape — use explicit world positions
