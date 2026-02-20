@@ -105,15 +105,15 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   7149: 'full',   // r26c4: counter middle
   7151: 'full',   // r26c6: counter middle
   7152: 'full',   // r26c7: counter middle
-  7159: 'bottom', // r27c4: counter base
-  7160: 'bottom', // r27c5: counter base
-  7161: 'bottom', // r27c6: counter base
+  7159: 'none', // r27c4: counter base — removed per Seth
+  7160: 'none', // r27c5: counter base — removed per Seth
+  7161: 'none', // r27c6: counter base — removed per Seth
   7165: 'none',   // r28c0: kitchen table top
   7166: 'none',   // r28c1: kitchen table top
   7175: 'full',   // r29c0: kitchen table middle
   7176: 'full',   // r29c1: kitchen table middle
-  7185: 'bottom', // r30c0: kitchen table base
-  7186: 'bottom', // r30c1: kitchen table base
+  7185: 'none', // r30c0: kitchen table base — removed per Seth
+  7186: 'none', // r30c1: kitchen table base — removed per Seth
 };
 
 /* ── Glass door animation config ── */

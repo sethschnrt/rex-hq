@@ -143,9 +143,9 @@ COLLISION_SHAPES = {
     7122:'bottom',7123:'bottom',7133:'bottom',
     7139:'full',7141:'full',7142:'full',7143:'none',
     7149:'full',7151:'full',7152:'full',
-    7159:'bottom',7160:'bottom',7161:'bottom',
+    7159:'none',7160:'none',7161:'none',
     7165:'none',7166:'none',7175:'full',7176:'full',
-    7185:'bottom',7186:'bottom',
+    7185:'none',7186:'none',
 }
 
 DOOR_GIDS = {4140, 4141, 4156, 4157}
