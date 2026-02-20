@@ -824,7 +824,7 @@ export class HQScene extends Phaser.Scene {
   // ── Status polling ──
   private async pollStatus() {
     try {
-      const res = await fetch('rex-status.json?t=' + Date.now());
+      const res = await fetch('https://jsonblob.com/api/jsonBlob/019c7ca8-2374-76ce-997a-bca381102a49');
       if (res.ok) {
         const data = await res.json();
         const newStatus = (data.status || 'idle') as RexStatus;
