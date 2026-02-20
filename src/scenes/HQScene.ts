@@ -53,7 +53,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   6931: 'full', 6932: 'full', 6933: 'none', // r4c6-8: TV unit mid (6933 removed per Seth)
   6934: 'bottom', // r4c9: cactus pot
   6935: 'bottom', 6936: 'bottom', // r5c0-1: couch base
-  6938: 'bottom', 6939: 'bottom', // r5c3-4: couch base
+  6938: 'bottom', 6939: 'none', // r5c3-4: couch base (6939 removed per Seth)
   6941: 'full', 6942: 'full', 6943: 'none', // r5c6-8: TV unit bottom (6943 removed per Seth)
   6951: 'none', 6952: 'none', 6953: 'none', // r6c6-8: TV unit base — removed per Seth
 
@@ -91,7 +91,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   7095: 'bottom', // r21c0: counter bottom
   7102: 'none',   // r21c7: fridge top
   7104: 'none',   // r21c9: display fridge top
-  7105: 'bottom', // r22c0: counter base
+  7105: 'none', // r22c0: counter base — removed per Seth
   7112: 'full',   // r22c7: fridge middle
   7113: 'full',   // r22c8: display fridge middle
   7115: 'full',   // r23c0: counter middle
