@@ -311,45 +311,6 @@ export class HQScene extends Phaser.Scene {
       }
     }
 
-    // ── Glass: extract as y-sorted sprites (same as furniture) ──
-    // Glass layer stays invisible but keeps collision enabled for one-way blocking
-    const glassLayerDataForSprites = map.getLayer('glass')!;
-    const DOOR_TILE_GIDS_SET = new Set([4140, 4141, 4156, 4157]);
-    for (let row = 0; row < glassLayerDataForSprites.height; row++) {
-      for (let col = 0; col < glassLayerDataForSprites.width; col++) {
-        const td = glassLayerDataForSprites.data[row][col];
-        if (!td || td.index <= 0) continue;
-        // Skip door tiles — those are handled by GlassDoor system
-        if (DOOR_TILE_GIDS_SET.has(td.index)) continue;
-
-        const gid = td.index;
-        let tileset: Phaser.Tilemaps.Tileset | null = null;
-        for (let i = map.tilesets.length - 1; i >= 0; i--) {
-          if (gid >= map.tilesets[i].firstgid) { tileset = map.tilesets[i]; break; }
-        }
-        if (!tileset) continue;
-
-        const localId = gid - tileset.firstgid;
-        const tsColumns = tileset.columns;
-        const srcX = (localId % tsColumns) * T;
-        const srcY = Math.floor(localId / tsColumns) * T;
-
-        const wx = col * T + T / 2;
-        const wy = row * T + T / 2;
-        const tileKey = `gl_${row}_${col}`;
-        const dt = this.textures.createCanvas(tileKey, T, T)!;
-        const srcCanvas = tileCanvases.get(tileset.name)!;
-        dt.context.drawImage(srcCanvas, srcX, srcY, T, T, 0, 0, T, T);
-        dt.refresh();
-
-        const glSprite = this.add.sprite(wx, wy, tileKey);
-        // Glass depth: per-row, same as furniture. Bottom edge of tile row.
-        glSprite.setDepth(10 + (row + 1) * T);
-      }
-    }
-    // Hide the tilemap glass layer visually (collision still works from the layer)
-    this.glassLayer.setAlpha(0);
-
     // ── Glass Doors ──
     // Door tiles in the glass layer: B763 (top-left), B764 (top-right), B779 (bottom-left), B780 (bottom-right)
     // basement firstgid = 3377
@@ -416,7 +377,7 @@ export class HQScene extends Phaser.Scene {
         dt.refresh();
 
         const sprite = this.add.sprite(wx, wy, tileKey);
-        sprite.setDepth(10 + (tr + 1) * T); // y-sorted like glass sprites
+        sprite.setDepth(3.5); // just above glass layer
         sprites.push(sprite);
         origXs.push(wx);
 
