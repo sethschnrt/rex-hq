@@ -139,14 +139,15 @@ interface GlassDoor {
 /* ── Rex activity states ──
  * 'working' — at desk, building/deploying (wrench bubble)
  * 'typing'  — at desk, actively writing a reply (dots bubble)
+ * 'idle'    — on the couch watching TV
  */
-type RexStatus = 'working' | 'typing';
+type RexStatus = 'working' | 'typing' | 'idle';
 
-// Rex's desk chair position (center of tile)
-const DESK_POS = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 };
+const DESK_POS   = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 };
+const COUCH_POS  = { x: 13 * T + T / 2, y: 19 * T + T / 2 }; // lounge couch, facing up at TV
 const STATUS_POLL_MS = 5000;
 const ARRIVE_THRESHOLD = 4;
-const AUTO_SPEED = SPEED; // same walking pace
+const AUTO_SPEED = SPEED;
 
 export class HQScene extends Phaser.Scene {
   public player!: Phaser.Physics.Arcade.Sprite;
@@ -161,7 +162,7 @@ export class HQScene extends Phaser.Scene {
   private touchDir = { x: 0, y: 0 };
 
   // ── Autonomous behavior ──
-  private rexStatus: RexStatus = 'working';
+  private rexStatus: RexStatus = 'idle';
   private statusBubble!: Phaser.GameObjects.Sprite;
   private autoTarget: { x: number; y: number } | null = null;
   private autoArrived = false;
@@ -563,10 +564,10 @@ export class HQScene extends Phaser.Scene {
     // ── Status bubble above Rex ──
     this.statusBubble = this.add.sprite(0, 0, 'emotes', 44);
     this.statusBubble.setOrigin(0.5, 1).setDepth(99999);
-    this.statusBubble.play('emote-working');
+    this.statusBubble.setVisible(false);
 
-    // ── Start status polling + auto-walk to desk ──
-    this.autoTarget = { ...DESK_POS };
+    // ── Start status polling + auto-walk to position ──
+    this.autoTarget = { ...COUCH_POS };
     this.pollStatus();
 
     // ── Input: WASD only (arrow keys conflict with browser scroll) ──
@@ -685,10 +686,17 @@ export class HQScene extends Phaser.Scene {
       const res = await fetch('rex-status.json?t=' + Date.now());
       if (res.ok) {
         const data = await res.json();
-        const newStatus = (data.status || 'working') as RexStatus;
+        const newStatus = (data.status || 'idle') as RexStatus;
         if (newStatus !== this.rexStatus) {
           this.rexStatus = newStatus;
-          this.statusBubble.play('emote-' + this.rexStatus);
+          // Update target position
+          if (newStatus === 'idle') {
+            this.autoTarget = { ...COUCH_POS };
+          } else {
+            this.autoTarget = { ...DESK_POS };
+            this.statusBubble.play('emote-' + newStatus);
+          }
+          this.autoArrived = false;
         }
       }
     } catch { /* ignore fetch errors */ }
@@ -729,7 +737,7 @@ export class HQScene extends Phaser.Scene {
 
       if (dist < ARRIVE_THRESHOLD) {
         this.autoArrived = true;
-        this.lastDir = 'up'; // face desk
+        this.lastDir = this.rexStatus === 'idle' ? 'up' : 'up'; // face TV or desk
       } else {
         vx = (dx / dist) * AUTO_SPEED;
         vy = (dy / dist) * AUTO_SPEED;
@@ -756,8 +764,8 @@ export class HQScene extends Phaser.Scene {
     // ── Status bubble follows Rex ──
     this.statusBubble.setPosition(this.player.x, this.player.y - 34);
     this.statusBubble.setDepth(this.player.depth + 1);
-    // Only show bubble when seated at desk
-    this.statusBubble.setVisible(this.autoArrived && !manualInput);
+    // Show bubble only when at desk working/typing, not when idle on couch
+    this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle');
 
     // Glass z-index
     const feetY = this.player.y + 30;
