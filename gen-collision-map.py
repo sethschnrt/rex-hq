@@ -116,8 +116,8 @@ BORDER_W = 3
 COLLISION_SHAPES = {
     6885:'none',6886:'none',6887:'none',6888:'none',6889:'none',6890:'none',
     6891:'chair',6892:'chair',6895:'bottom',6896:'bottom',6897:'bottom',6898:'bottom',
-    6899:'none',6900:'none',6901:'chair',6902:'chair',6905:'bottom',6906:'bottom',
-    6907:'bottom',6908:'bottom',6591:'bottom',6592:'bottom',6920:'none',6930:'bottom',
+    6899:'none',6900:'none',6901:'chair',6902:'chair',6905:'none',6906:'none',
+    6907:'none',6908:'none',6591:'none',6592:'none',6920:'none',6930:'bottom',
     6915:'none',6916:'none',6918:'none',6919:'none',6921:'full',6922:'full',6923:'full',
     6924:'none',6925:'full',6926:'full',6928:'full',6929:'full',6931:'full',6932:'full',
     6933:'full',6934:'bottom',6935:'bottom',6936:'bottom',6938:'bottom',6939:'bottom',

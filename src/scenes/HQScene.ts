@@ -37,9 +37,9 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   6895: 'bottom', 6896: 'bottom', 6897: 'bottom', 6898: 'bottom', // r1: desk body mid
   6899: 'none', 6900: 'none',   // r1: painting bottom
   6901: 'chair', 6902: 'chair', // r1: chair bottom
-  6905: 'bottom', 6906: 'bottom', 6907: 'bottom', 6908: 'bottom', // r2: desk body base
+  6905: 'none', 6906: 'none', 6907: 'none', 6908: 'none', // r2: desk body base — removed per Seth
   // Bookshelf (#15-16) — livingroom tileset
-  6591: 'bottom', 6592: 'bottom', // bookshelf base row
+  6591: 'none', 6592: 'none', // bookshelf base row — removed per Seth
   6920: 'none',  // r3c5: plant top (pot at row below)
   6930: 'bottom', // r4c5: plant pot
 
