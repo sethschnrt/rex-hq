@@ -280,7 +280,10 @@ export class HQScene extends Phaser.Scene {
 
         const sprite = this.add.sprite(wx, wy, tileKey);
         // Depth = bottom edge of this tile (row+1)*T, offset by 10 to stay above floor layers
-        sprite.setDepth(10 + (row + 1) * T);
+        // Palm/furniture on glass rows (7-8, 15-16) get boosted depth so they
+        // always render above the glass layer even when it's dynamically raised
+        const isGlassRow = (row >= 7 && row <= 8) || (row >= 15 && row <= 16);
+        sprite.setDepth(isGlassRow ? 9000 + (row + 1) * T : 10 + (row + 1) * T);
         this.furnitureSprites.push(sprite);
 
         // Per-GID collision shape — use explicit world positions
