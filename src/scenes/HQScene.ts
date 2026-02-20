@@ -34,7 +34,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   6885: 'none', 6886: 'none', 6887: 'none', 6888: 'none', // r0: desk surface (monitors)
   6889: 'none', 6890: 'none',   // r0: painting top
   6891: 'chair', 6892: 'chair', // r0: chair top
-  6895: 'bottom', 6896: 'bottom', 6897: 'bottom', 6898: 'bottom', // r1: desk body mid
+  6895: 'full', 6896: 'full', 6897: 'full', 6898: 'full', // r1: desk body mid
   6899: 'none', 6900: 'none',   // r1: painting bottom
   6901: 'chair', 6902: 'chair', // r1: chair bottom
   6905: 'none', 6906: 'none', 6907: 'none', 6908: 'none', // r2: desk body base — removed per Seth
@@ -46,7 +46,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   // ── Lounge ──
   6915: 'none', 6916: 'none',   // r3c0-1: couch top (body below)
   6918: 'none', 6919: 'none',   // r3c3-4: couch top (body below)
-  6921: 'bottom', 6922: 'bottom', 6923: 'bottom', // r3c6-8: TV unit top shelf
+  6921: 'bottom', 6922: 'bottom', 6923: 'none', // r3c6-8: TV unit top shelf (6923 removed per Seth)
   6924: 'none',  // r3c9: cactus top (pot below)
   6925: 'none', 6926: 'full',   // r4c0-1: couch middle (6925 collision moved above 6926)
   6928: 'full', 6929: 'full',   // r4c3-4: couch middle
