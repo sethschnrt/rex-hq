@@ -819,44 +819,18 @@ export class HQScene extends Phaser.Scene {
     this.navigateTo(pick.name);
   }
 
+  private pendingTarget: string | null = null;
+
   private navigateTo(targetName: string) {
-    // If Rex is still walking (not arrived), route from nearest spine point
-    // instead of the old activity's exit path (which may not match his position)
+    // If Rex is mid-walk, don't interrupt — queue the destination
+    // He'll reroute once he arrives at the current target
     if (!this.autoArrived && this.waypoints.length > 0) {
-      // Use remaining waypoints — they're already collision-safe
-      // Find the first remaining waypoint that's a spine point, then route from there
-      const remaining = [...this.waypoints];
-      const enter = FROM_SPINE[targetName];
-      if (enter) {
-        const iB = spineIndex(enter.spine);
-        if (iB >= 0) {
-          // Find the first spine waypoint in remaining path
-          let spineStart = -1;
-          let spineStartIdx = -1;
-          for (let i = 0; i < remaining.length; i++) {
-            const si = spineIndex(remaining[i]);
-            if (si >= 0) { spineStart = si; spineStartIdx = i; break; }
-          }
-          if (spineStartIdx >= 0) {
-            // Route: remaining waypoints up to spine point + spine segment + entry
-            const route: Pt[] = remaining.slice(0, spineStartIdx + 1);
-            if (spineStart < iB) {
-              for (let i = spineStart + 1; i <= iB; i++) route.push(SPINE[i]);
-            } else if (spineStart > iB) {
-              for (let i = spineStart - 1; i >= iB; i--) route.push(SPINE[i]);
-            }
-            route.push(...enter.path);
-            this.currentActivity = targetName;
-            this.waypoints = route;
-            this.autoArrived = false;
-            this.idleLingerUntil = 0;
-            return;
-          }
-        }
-      }
+      this.pendingTarget = targetName;
+      return;
     }
 
-    // Normal case: Rex is at the activity location
+    // Normal case: Rex is at the activity location (arrived)
+    this.pendingTarget = null;
     const route = buildRoute(this.currentActivity, targetName);
     this.currentActivity = targetName;
     this.waypoints = route;
@@ -923,12 +897,20 @@ export class HQScene extends Phaser.Scene {
         this.waypoints.shift();
         if (this.waypoints.length === 0) {
           this.autoArrived = true;
-          // Face the direction defined by the activity
-          const act = IDLE_ACTIVITIES.find(a => a.name === this.currentActivity);
-          this.lastDir = act ? act.face : (this.currentActivity === 'desk' ? 'left' : 'down');
-          // Set linger timer for idle activities
-          if (this.rexStatus === 'idle' && this.currentActivity !== 'desk') {
-            this.idleLingerUntil = time + IDLE_LINGER_MIN + Math.random() * (IDLE_LINGER_MAX - IDLE_LINGER_MIN);
+
+          // If there's a pending destination (status changed mid-walk), go there now
+          if (this.pendingTarget) {
+            const pt = this.pendingTarget;
+            this.pendingTarget = null;
+            this.navigateTo(pt);
+          } else {
+            // Face the direction defined by the activity
+            const act = IDLE_ACTIVITIES.find(a => a.name === this.currentActivity);
+            this.lastDir = act ? act.face : (this.currentActivity === 'desk' ? 'left' : 'down');
+            // Set linger timer for idle activities
+            if (this.rexStatus === 'idle' && this.currentActivity !== 'desk') {
+              this.idleLingerUntil = time + IDLE_LINGER_MIN + Math.random() * (IDLE_LINGER_MAX - IDLE_LINGER_MIN);
+            }
           }
         }
       } else {
