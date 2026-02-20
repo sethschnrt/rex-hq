@@ -6,109 +6,179 @@
   <title>Rex HQ</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #0d1117; }
-    #game-container { width: 100%; }
-    canvas { display: block; width: 100% !important; height: auto !important; }
+    html, body { width: 100%; height: 100%; background: #0d1117; overflow: hidden; }
     .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 
+    /* ── Auth Gate ── */
     #auth-gate {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      font-family: 'Press Start 2P', monospace;
-      color: #c9d1d9;
-      background: #0d1117;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; font-family: 'Press Start 2P', monospace; color: #c9d1d9; background: #0d1117;
     }
-
     .login-box {
-      background: #161b22;
-      border: 3px solid #30363d;
-      padding: 2.5rem 2.5rem 2rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background: #161b22; border: 3px solid #30363d; padding: 2.5rem 2.5rem 2rem;
+      display: flex; flex-direction: column; align-items: center;
     }
-
-    .rex-sprite {
-      width: 64px;
-      height: 128px;
-      margin-bottom: 1.25rem;
-    }
-
-    #auth-gate h1 {
-      font-size: 1.2rem;
-      letter-spacing: 6px;
-      margin-bottom: 0.5rem;
-      color: #e6edf3;
-    }
-
-    .subtitle {
-      font-size: 0.4rem;
-      color: #8b949e;
-      margin-bottom: 2rem;
-      letter-spacing: 2px;
-    }
-
-    #auth-form {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
+    .rex-sprite { width: 64px; height: 128px; margin-bottom: 1.25rem; }
+    #auth-gate h1 { font-size: 1.2rem; letter-spacing: 6px; margin-bottom: 0.5rem; color: #e6edf3; }
+    .subtitle { font-size: 0.4rem; color: #8b949e; margin-bottom: 2rem; letter-spacing: 2px; }
+    #auth-form { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
     #auth-form input {
-      padding: 0.6rem 0.75rem;
-      font-size: 0.55rem;
+      padding: 0.6rem 0.75rem; font-size: 0.55rem; font-family: 'Press Start 2P', monospace;
+      background: #0d1117; border: 2px solid #30363d; color: #c9d1d9; outline: none; width: 210px; text-align: center;
+    }
+    #auth-form input:focus { border-color: #58a6ff; }
+    #auth-form input::placeholder { color: #484f58; }
+    #auth-form button {
+      padding: 0.5rem 1.5rem; font-size: 0.5rem; font-family: 'Press Start 2P', monospace;
+      background: #238636; color: #fff; border: 2px solid #2ea043; cursor: pointer; letter-spacing: 2px;
+    }
+    #auth-form button:hover { background: #2ea043; }
+    #auth-form button:active { transform: scale(0.97); }
+    #auth-error { color: #f85149; font-size: 0.4rem; margin-top: 0.75rem; min-height: 1em; }
+
+    /* ── App Shell (hidden until auth) ── */
+    #app {
+      display: none;
+      width: 100%; height: 100vh;
+      flex-direction: column;
       font-family: 'Press Start 2P', monospace;
       background: #0d1117;
-      border: 2px solid #30363d;
-      color: #c9d1d9;
+    }
+
+    /* ── Top Bar ── */
+    #top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 40px; padding: 0 12px;
+      background: #161b22; border-bottom: 2px solid #30363d;
+      flex-shrink: 0; z-index: 100;
+    }
+    #top-bar .left, #top-bar .right { display: flex; align-items: center; gap: 12px; }
+    #top-bar .title { font-size: 0.5rem; color: #e6edf3; letter-spacing: 2px; }
+    .bar-btn {
+      background: none; border: none; color: #8b949e; font-size: 0.6rem;
+      font-family: 'Press Start 2P', monospace; cursor: pointer; padding: 4px 8px;
+      position: relative;
+    }
+    .bar-btn:hover { color: #e6edf3; }
+    .bar-btn .badge {
+      position: absolute; top: -2px; right: -2px;
+      background: #f85149; color: #fff; font-size: 0.3rem;
+      min-width: 12px; height: 12px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px;
+    }
+
+    /* ── Game Area ── */
+    #game-area {
+      flex: 1; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      background: #0d1117;
+    }
+    #game-container { max-height: 100%; }
+    #game-container canvas { display: block; width: 100% !important; height: auto !important; max-height: 100%; }
+
+    /* ── Chat Bar ── */
+    #chat-bar {
+      display: flex; align-items: center; gap: 8px;
+      height: 44px; padding: 0 10px;
+      background: #161b22; border-top: 2px solid #30363d;
+      flex-shrink: 0; z-index: 100;
+    }
+    #chat-input {
+      flex: 1; height: 30px; padding: 0 10px;
+      font-size: 0.45rem; font-family: 'Press Start 2P', monospace;
+      background: #0d1117; border: 2px solid #30363d; color: #c9d1d9;
       outline: none;
-      width: 210px;
-      text-align: center;
+    }
+    #chat-input:focus { border-color: #58a6ff; }
+    #chat-input::placeholder { color: #484f58; }
+    #chat-send {
+      height: 30px; padding: 0 12px;
+      font-size: 0.4rem; font-family: 'Press Start 2P', monospace;
+      background: #238636; color: #fff; border: 2px solid #2ea043;
+      cursor: pointer; white-space: nowrap;
+    }
+    #chat-send:hover { background: #2ea043; }
+    #chat-send:active { transform: scale(0.97); }
+
+    /* ── Side Panel (slides from right) ── */
+    #side-panel {
+      position: fixed; top: 0; right: -280px; width: 280px; height: 100vh;
+      background: #161b22; border-left: 2px solid #30363d;
+      z-index: 200; transition: right 0.2s ease;
+      display: flex; flex-direction: column;
+    }
+    #side-panel.open { right: 0; }
+    #panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px; border-bottom: 2px solid #30363d;
+    }
+    #panel-header .title { font-size: 0.45rem; color: #e6edf3; letter-spacing: 1px; }
+    #panel-close {
+      background: none; border: none; color: #8b949e; font-size: 0.7rem;
+      font-family: 'Press Start 2P', monospace; cursor: pointer;
+    }
+    #panel-close:hover { color: #f85149; }
+
+    /* Panel nav tabs */
+    #panel-tabs {
+      display: flex; border-bottom: 2px solid #30363d;
+    }
+    .panel-tab {
+      flex: 1; padding: 8px 4px; text-align: center;
+      font-size: 0.35rem; font-family: 'Press Start 2P', monospace;
+      color: #8b949e; background: none; border: none; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -2px;
+    }
+    .panel-tab:hover { color: #c9d1d9; }
+    .panel-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+    /* Panel content */
+    #panel-content {
+      flex: 1; overflow-y: auto; padding: 12px;
+      font-size: 0.35rem; color: #8b949e; line-height: 1.8;
     }
 
-    #auth-form input:focus {
-      border-color: #58a6ff;
+    /* Overlay for closing panel */
+    #panel-overlay {
+      display: none; position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,0.5);
     }
+    #panel-overlay.open { display: block; }
 
-    #auth-form input::placeholder {
-      color: #484f58;
-    }
+    /* ── Music Player (mini) ── */
+    .music-btn { font-size: 0.55rem; }
+    .music-btn.playing { color: #58a6ff; }
 
-    #auth-form button {
-      padding: 0.5rem 1.5rem;
-      font-size: 0.5rem;
-      font-family: 'Press Start 2P', monospace;
-      background: #238636;
-      color: #fff;
-      border: 2px solid #2ea043;
-      cursor: pointer;
-      letter-spacing: 2px;
+    /* ── Chat Messages Overlay ── */
+    #chat-messages {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      max-height: 40%; overflow-y: auto; padding: 8px 10px;
+      pointer-events: none; z-index: 50;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      mask-image: linear-gradient(transparent, black 30%);
+      -webkit-mask-image: linear-gradient(transparent, black 30%);
     }
-
-    #auth-form button:hover {
-      background: #2ea043;
+    .chat-msg {
+      padding: 4px 8px; margin-bottom: 4px; font-size: 0.35rem;
+      font-family: 'Press Start 2P', monospace; line-height: 1.6;
+      max-width: 85%; pointer-events: auto;
     }
-
-    #auth-form button:active {
-      transform: scale(0.97);
+    .chat-msg.user {
+      align-self: flex-end; background: #1a3a5c; color: #58a6ff;
+      border: 1px solid #264d73;
     }
-
-    #auth-error {
-      color: #f85149;
-      font-size: 0.4rem;
-      margin-top: 0.75rem;
-      min-height: 1em;
+    .chat-msg.rex {
+      align-self: flex-start; background: #1a2e1a; color: #56d364;
+      border: 1px solid #2a5a2a;
     }
+    .chat-msg .sender { font-size: 0.25rem; color: #8b949e; margin-bottom: 2px; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <script type="module" crossorigin src="/rex-hq/assets/index-DbfFBww9.js"></script>
 </head>
 <body>
+  <!-- Auth Gate -->
   <div id="auth-gate">
     <div class="login-box">
       <img src="assets/sprites/rex-logo-full.png" class="rex-sprite pixel" alt="Rex" />
@@ -122,7 +192,52 @@
     </div>
   </div>
 
-  <div id="game-container"></div>
+  <!-- App Shell -->
+  <div id="app">
+    <!-- Top Bar -->
+    <div id="top-bar">
+      <div class="left">
+        <span class="title">REX HQ</span>
+      </div>
+      <div class="right">
+        <button class="bar-btn music-btn" id="btn-music" title="Music">♫</button>
+        <button class="bar-btn" id="btn-notif" title="Notifications">
+          🔔<span class="badge" id="notif-badge" style="display:none">0</span>
+        </button>
+        <button class="bar-btn" id="btn-menu" title="Menu">☰</button>
+      </div>
+    </div>
+
+    <!-- Game Area -->
+    <div id="game-area">
+      <div id="game-container"></div>
+      <!-- Chat messages float over the game -->
+      <div id="chat-messages"></div>
+    </div>
+
+    <!-- Chat Bar -->
+    <div id="chat-bar">
+      <input type="text" id="chat-input" placeholder="Message Rex..." autocomplete="off" />
+      <button id="chat-send">SEND</button>
+    </div>
+  </div>
+
+  <!-- Side Panel -->
+  <div id="panel-overlay"></div>
+  <div id="side-panel">
+    <div id="panel-header">
+      <span class="title" id="panel-title">MENU</span>
+      <button id="panel-close">✕</button>
+    </div>
+    <div id="panel-tabs">
+      <button class="panel-tab active" data-tab="tasks">TASKS</button>
+      <button class="panel-tab" data-tab="journal">LOG</button>
+      <button class="panel-tab" data-tab="settings">CFG</button>
+    </div>
+    <div id="panel-content">
+      <p>No tasks yet.</p>
+    </div>
+  </div>
 
   <script>
     const HASH = 'e23f2dc5ed277d5d5a7f378e3e65deed4248f2305540d5893ab3cb1557034341';
@@ -138,6 +253,7 @@
     function unlock() {
       window.__REX_AUTH = true;
       document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
     }
 
     document.getElementById('auth-form').addEventListener('submit', async (e) => {
@@ -156,6 +272,77 @@
     if (localStorage.getItem(AUTH_KEY) === HASH) {
       unlock();
     }
+
+    // ── Side Panel ──
+    const panel = document.getElementById('side-panel');
+    const overlay = document.getElementById('panel-overlay');
+    document.getElementById('btn-menu').addEventListener('click', () => {
+      panel.classList.add('open');
+      overlay.classList.add('open');
+    });
+    document.getElementById('panel-close').addEventListener('click', closePanel);
+    overlay.addEventListener('click', closePanel);
+    function closePanel() {
+      panel.classList.remove('open');
+      overlay.classList.remove('open');
+    }
+
+    // Panel tabs
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const content = document.getElementById('panel-content');
+        const tabName = tab.dataset.tab;
+        if (tabName === 'tasks') content.innerHTML = '<p>No tasks yet.</p>';
+        else if (tabName === 'journal') content.innerHTML = '<p>No journal entries.</p>';
+        else if (tabName === 'settings') content.innerHTML = '<p>Settings coming soon.</p>';
+      });
+    });
+
+    // ── Chat (placeholder behavior) ──
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    function sendChat() {
+      const msg = chatInput.value.trim();
+      if (!msg) return;
+      addMessage('You', msg, 'user');
+      chatInput.value = '';
+      // Placeholder: Rex "responds" after a delay
+      setTimeout(() => {
+        addMessage('Rex', '...', 'rex');
+      }, 1500);
+    }
+
+    function addMessage(sender, text, type) {
+      const div = document.createElement('div');
+      div.className = 'chat-msg ' + type;
+      div.innerHTML = '<div class="sender">' + sender + '</div>' + text;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      // Fade out after 10 seconds
+      setTimeout(() => { div.style.opacity = '0.3'; }, 10000);
+    }
+
+    document.getElementById('chat-send').addEventListener('click', sendChat);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendChat();
+    });
+
+    // ── Music toggle (placeholder) ──
+    let musicPlaying = false;
+    document.getElementById('btn-music').addEventListener('click', (e) => {
+      musicPlaying = !musicPlaying;
+      e.target.classList.toggle('playing', musicPlaying);
+    });
+
+    // ── Notifications (placeholder) ──
+    document.getElementById('btn-notif').addEventListener('click', () => {
+      panel.classList.add('open');
+      overlay.classList.add('open');
+      // Switch to a notifications view in the future
+    });
   </script>
 </body>
 </html>
