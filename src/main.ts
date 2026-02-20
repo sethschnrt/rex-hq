@@ -1,12 +1,17 @@
 import Phaser from 'phaser';
 import { HQScene } from './scenes/HQScene';
 
+// Map is 20x22 tiles at 32px = 640x704
+// Render at native resolution, CSS scales to 100vw
+const MAP_W = 640;
+const MAP_H = 704;
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: window.innerWidth,
-  height: window.innerHeight,
-  backgroundColor: '#2d2d3f',
+  width: MAP_W,
+  height: MAP_H,
+  backgroundColor: '#1a1a2e',
   pixelArt: true,
   physics: {
     default: 'arcade',
@@ -15,16 +20,16 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
+  input: {
+    mouse: { preventDefaultWheel: false },
+    touch: { capture: false },
   },
   scene: [HQScene],
 };
 
 const game = new Phaser.Game(config);
+(window as any).__PHASER_GAME__ = game;
 
-// HMR support
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     game.destroy(true);
