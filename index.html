@@ -9,10 +9,117 @@
     html, body { width: 100%; background: #1a1a2e; }
     #game-container { width: 100%; }
     canvas { display: block; width: 100% !important; height: auto !important; }
+
+    /* Password gate */
+    #auth-gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: #e0e0e0;
+    }
+    #auth-gate h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #4fc3f7;
+      text-shadow: 0 0 20px rgba(79, 195, 247, 0.3);
+    }
+    #auth-gate p {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+    #auth-form {
+      display: flex;
+      gap: 0.5rem;
+    }
+    #auth-form input {
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      font-family: 'Courier New', monospace;
+      background: #0d1117;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+      outline: none;
+      width: 220px;
+    }
+    #auth-form input:focus {
+      border-color: #4fc3f7;
+      box-shadow: 0 0 8px rgba(79, 195, 247, 0.2);
+    }
+    #auth-form button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      font-family: 'Courier New', monospace;
+      background: #4fc3f7;
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #auth-form button:hover { background: #81d4fa; }
+    #auth-error {
+      color: #ef5350;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
+  <!-- Password gate -->
+  <div id="auth-gate">
+    <h1>🤖 Rex HQ</h1>
+    <p>Authorized personnel only</p>
+    <form id="auth-form">
+      <input type="password" id="auth-pw" placeholder="Password" autocomplete="off" autofocus />
+      <button type="submit">Enter</button>
+    </form>
+    <div id="auth-error"></div>
+  </div>
+
+  <!-- Game (hidden until authenticated) -->
   <div id="game-container"></div>
+
+  <script>
+    const HASH = 'e23f2dc5ed277d5d5a7f378e3e65deed4248f2305540d5893ab3cb1557034341';
+    const AUTH_KEY = 'rex-hq-auth';
+
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Auth state — game checks this before initializing
+    window.__REX_AUTH = false;
+
+    function unlock() {
+      window.__REX_AUTH = true;
+      document.getElementById('auth-gate').style.display = 'none';
+    }
+
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pw = document.getElementById('auth-pw').value;
+      const hash = await sha256(pw);
+      if (hash === HASH) {
+        localStorage.setItem(AUTH_KEY, hash);
+        unlock();
+      } else {
+        document.getElementById('auth-error').textContent = 'Wrong password';
+        document.getElementById('auth-pw').value = '';
+      }
+    });
+
+    // Auto-unlock if previously authenticated
+    if (localStorage.getItem(AUTH_KEY) === HASH) {
+      unlock();
+    }
+  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
