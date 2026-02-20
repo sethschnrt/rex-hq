@@ -827,12 +827,11 @@ export class HQScene extends Phaser.Scene {
   // ── Status polling ──
   private async pollStatus() {
     try {
-      const res = await fetch(REX_STATUS_URL + (REX_STATUS_URL.startsWith('http') ? '' : '?t=' + Date.now()), {
-        headers: { 'ngrok-skip-browser-warning': '1' },
-      });
+      const res = await fetch(REX_STATUS_URL, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const newStatus = (data.status || 'idle') as RexStatus;
+        console.log('[Rex] status poll:', newStatus, 'current:', this.rexStatus);
         if (newStatus !== this.rexStatus) {
           this.rexStatus = newStatus;
           if (newStatus === 'idle') {
@@ -843,6 +842,8 @@ export class HQScene extends Phaser.Scene {
             this.statusBubble.play('emote-' + newStatus);
           }
         }
+      } else {
+        console.warn('[Rex] status poll failed:', res.status);
       }
     } catch { /* ignore fetch errors */ }
     this.time.delayedCall(STATUS_POLL_MS, () => this.pollStatus());
