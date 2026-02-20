@@ -504,8 +504,9 @@ export class HQScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.walls3dLayer);
     // Glass is one-way: blocks from below (south), pass-through from above (north)
     // Glass walls at rows 7-8 (top Y=224) and rows 15-16 (top Y=480)
-    // If Rex's body top is above the glass section top → he's on the north side → no collision
-    // If Rex's body top is at or below → he's on the south side → collision active
+    // Use Rex's sprite Y (visual center) to determine side — NOT body.y
+    // Body.y is offset 48px down from sprite top, so it reaches the glass section
+    // at the same Y the sprite is still visually above the glass
     const GLASS_SECTIONS = [7 * T, 15 * T]; // top Y of each glass wall section
     this.physics.add.collider(this.player, this.glassLayer, undefined, (_player, _tile) => {
       const p = _player as Phaser.Physics.Arcade.Sprite;
@@ -519,11 +520,13 @@ export class HQScene extends Phaser.Scene {
           break;
         }
       }
-      // Rex's body top
-      const bodyTopY = p.body!.y;
-      // If Rex's body top is above the glass section → north side → pass through
-      // If at or below → south side → block
-      return bodyTopY >= sectionTopY;
+      // Use sprite center Y — this is where Rex visually "is"
+      // Sprite is 32x64, origin 0.5 → sprite top = p.y - 32
+      // Rex is visually "north" of the glass if his sprite top is above the section
+      const spriteTopY = p.y - 32;
+      // Only block if Rex's sprite top is at or below the glass section top
+      // (meaning he's approaching from the south / main office side)
+      return spriteTopY >= sectionTopY;
     });
     this.physics.add.collider(this.player, this.furnitureColliders);
 
