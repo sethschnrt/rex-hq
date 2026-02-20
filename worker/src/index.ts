@@ -1,6 +1,7 @@
 // Rex Status API — Cloudflare Worker + KV
 // GET /  → returns {"status":"idle|typing|working"}
 // PUT /  → sets status from JSON body {"status":"typing"}
+// Typing/working auto-expires to idle after 30s unless refreshed
 
 export interface Env {
   STATUS_KV: KVNamespace;
@@ -13,6 +14,8 @@ const CORS = {
   'Cache-Control': 'no-cache, no-store',
 };
 
+const TTL_MS = 30_000; // typing/working expires after 30s
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -23,7 +26,8 @@ export default {
       try {
         const body = await request.json() as { status?: string };
         const status = body.status || 'idle';
-        await env.STATUS_KV.put('current', status);
+        const value = JSON.stringify({ status, ts: Date.now() });
+        await env.STATUS_KV.put('current', value);
         return new Response(JSON.stringify({ status }), {
           headers: { ...CORS, 'Content-Type': 'application/json' },
         });
@@ -35,8 +39,22 @@ export default {
       }
     }
 
-    // GET
-    const status = (await env.STATUS_KV.get('current')) || 'idle';
+    // GET — check TTL for non-idle statuses
+    const raw = await env.STATUS_KV.get('current');
+    let status = 'idle';
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        status = data.status || 'idle';
+        // Auto-expire typing/working after TTL
+        if (status !== 'idle' && data.ts && Date.now() - data.ts > TTL_MS) {
+          status = 'idle';
+        }
+      } catch {
+        // Legacy format (plain string) — treat as-is, no TTL
+        status = raw;
+      }
+    }
     return new Response(JSON.stringify({ status }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
