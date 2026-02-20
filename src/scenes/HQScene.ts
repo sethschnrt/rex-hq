@@ -315,6 +315,9 @@ export class HQScene extends Phaser.Scene {
     this.load.spritesheet('emotes', 'assets/tilesets/limezu/4_User_Interface_Elements/UI_thinking_emotes_animation_32x32.png', {
       frameWidth: 32, frameHeight: 32,
     });
+    this.load.spritesheet('typing-bubble', 'assets/sprites/typing-bubble.png', {
+      frameWidth: 40, frameHeight: 24,
+    });
 
     this.load.spritesheet('rex-walk', 'assets/sprites/rex-walk.png', {
       frameWidth: T,
@@ -673,23 +676,16 @@ export class HQScene extends Phaser.Scene {
 
     // ── Emote animations (UI_thinking_emotes_animation_32x32.png, 10 cols) ──
     // Typing dots: frames build up dots then hold — row 0-1 cols 0-3
-    // Frame indices: row*10+col → (0,0)=0 empty, (1,0)=10 1-dot, (1,1)=11 2-dots, (1,2)=12 3-dots, (1,3)=13 3-dots-alt
+    // Typing bubble animation: 0=empty, 1=one dot, 2=two dots, 3=three dots
     this.anims.create({
-      key: 'emote-typing',
-      frames: this.anims.generateFrameNumbers('emotes', { frames: [0, 10, 11, 12, 13, 12, 13] }),
-      frameRate: 4,
-      repeat: -1,
-    });
-    // Working wrench: row 4 cols 4-5 → frame 44, 45
-    this.anims.create({
-      key: 'emote-working',
-      frames: this.anims.generateFrameNumbers('emotes', { frames: [44, 45] }),
-      frameRate: 2,
+      key: 'typing-dots',
+      frames: this.anims.generateFrameNumbers('typing-bubble', { frames: [0, 1, 2, 3, 3, 3] }),
+      frameRate: 3,
       repeat: -1,
     });
 
-    // ── Status bubble above Rex ──
-    this.statusBubble = this.add.sprite(0, 0, 'emotes', 44);
+    // ── Typing bubble above Rex ──
+    this.statusBubble = this.add.sprite(0, 0, 'typing-bubble', 0);
     this.statusBubble.setOrigin(0.5, 1).setDepth(99999);
     this.statusBubble.setVisible(false);
 
@@ -845,7 +841,7 @@ export class HQScene extends Phaser.Scene {
           } else {
             // Go to desk for work
             this.navigateTo('desk');
-            this.statusBubble.play('emote-' + newStatus);
+            this.statusBubble.play('typing-dots');
           }
         }
       }
@@ -926,7 +922,7 @@ export class HQScene extends Phaser.Scene {
     }
 
     // ── Status bubble follows Rex ──
-    this.statusBubble.setPosition(this.player.x, this.player.y - 34);
+    this.statusBubble.setPosition(this.player.x, this.player.y - 20);
     this.statusBubble.setDepth(this.player.depth + 1);
     // Show bubble only when at desk working/typing
     this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle');
