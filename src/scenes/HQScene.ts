@@ -136,6 +136,33 @@ interface GlassDoor {
   state: 'closed' | 'opening' | 'open' | 'closing';
 }
 
+/* ── Rex activity states ──
+ * 'idle'    — lounging, wanders between relaxation spots
+ * 'working' — at his desk, coding/building
+ * 'typing'  — actively responding to a message
+ * 'chatting' — conversing with another agent (future)
+ */
+type RexStatus = 'idle' | 'working' | 'typing' | 'chatting';
+
+// Key positions in pixel coords (center of tile)
+const DESK_POS   = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 }; // Rex's chair at desk
+const LOUNGE_POS = { x: 14 * T + T / 2, y: 18 * T + T / 2 };  // lounge couch area
+const KITCHEN_POS = { x: 5 * T + T / 2, y: 18 * T + T / 2 };  // kitchen hang
+const CONF_POS   = { x: 14 * T + T / 2, y: 4 * T + T / 2 };   // conference room
+const IDLE_SPOTS = [LOUNGE_POS, KITCHEN_POS, CONF_POS];
+const STATUS_POLL_MS = 5000; // poll rex-status.json every 5s
+const ARRIVE_THRESHOLD = 4; // px from target to consider "arrived"
+const AUTO_SPEED = 60;      // slower than player-controlled (100)
+const IDLE_LINGER_MS = 8000; // how long to hang at an idle spot before moving
+const MANUAL_OVERRIDE_MS = 3000; // after last keypress, wait this long before resuming auto
+
+const STATUS_ICONS: Record<RexStatus, string> = {
+  idle: '😴',
+  working: '💻',
+  typing: '💬',
+  chatting: '🗣️',
+};
+
 export class HQScene extends Phaser.Scene {
   public player!: Phaser.Physics.Arcade.Sprite;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -147,6 +174,15 @@ export class HQScene extends Phaser.Scene {
   private lastDir: string = 'down';
   public doors: GlassDoor[] = [];
   private touchDir = { x: 0, y: 0 };
+
+  // ── Autonomous behavior ──
+  private rexStatus: RexStatus = 'idle';
+  private statusBubble!: Phaser.GameObjects.Text;
+  private autoTarget: { x: number; y: number } | null = null;
+  private autoArrived = false;
+  private autoLingerTimer = 0;
+  private lastManualInput = 0;
+  private lastStatusPoll = 0;
 
   constructor() {
     super({ key: 'HQScene' });
@@ -520,6 +556,15 @@ export class HQScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, MAP_PX_W, MAP_PX_H);
 
+    // ── Status bubble above Rex ──
+    this.statusBubble = this.add.text(0, 0, '', {
+      fontSize: '16px',
+      padding: { x: 2, y: 2 },
+    }).setOrigin(0.5, 1).setDepth(99999);
+
+    // ── Start status polling ──
+    this.pollStatus();
+
     // ── Input: WASD only (arrow keys conflict with browser scroll) ──
     this.keys = {
       W: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -630,48 +675,126 @@ export class HQScene extends Phaser.Scene {
     pad.addEventListener('touchcancel', endTouch, { passive: false });
   }
 
-  update(_time: number, delta: number) {
+  // ── Status polling ──
+  private async pollStatus() {
+    try {
+      const res = await fetch('rex-status.json?t=' + Date.now());
+      if (res.ok) {
+        const data = await res.json();
+        const newStatus = (data.status || 'idle') as RexStatus;
+        if (newStatus !== this.rexStatus) {
+          this.rexStatus = newStatus;
+          this.onStatusChange();
+        }
+      }
+    } catch { /* ignore fetch errors */ }
+    this.time.delayedCall(STATUS_POLL_MS, () => this.pollStatus());
+  }
+
+  private onStatusChange() {
+    this.autoArrived = false;
+    this.autoLingerTimer = 0;
+    // Pick target based on status
+    if (this.rexStatus === 'working' || this.rexStatus === 'typing') {
+      this.autoTarget = { ...DESK_POS };
+    } else if (this.rexStatus === 'idle') {
+      this.pickIdleSpot();
+    }
+  }
+
+  private pickIdleSpot() {
+    const spot = IDLE_SPOTS[Math.floor(Math.random() * IDLE_SPOTS.length)];
+    this.autoTarget = { ...spot };
+    this.autoArrived = false;
+  }
+
+  private getFacingDir(status: RexStatus): string {
+    if (status === 'working' || status === 'typing') return 'up'; // facing desk
+    return this.lastDir;
+  }
+
+  update(time: number, delta: number) {
     const up = this.keys.W.isDown || this.touchDir.y < 0;
     const down = this.keys.S.isDown || this.touchDir.y > 0;
     const left = this.keys.A.isDown || this.touchDir.x < 0;
     const right = this.keys.D.isDown || this.touchDir.x > 0;
 
-    const mx = (left ? -1 : 0) + (right ? 1 : 0);
-    const my = (up ? -1 : 0) + (down ? 1 : 0);
+    const manualInput = up || down || left || right;
+    if (manualInput) this.lastManualInput = time;
+    const manualOverride = (time - this.lastManualInput) < MANUAL_OVERRIDE_MS;
 
-    let vx = mx * SPEED;
-    let vy = my * SPEED;
+    let vx = 0;
+    let vy = 0;
+    let moving = false;
 
-    if (mx !== 0 && my !== 0) {
-      vx *= 0.707;
-      vy *= 0.707;
+    if (manualOverride && manualInput) {
+      // ── Manual control ──
+      const mx = (left ? -1 : 0) + (right ? 1 : 0);
+      const my = (up ? -1 : 0) + (down ? 1 : 0);
+      vx = mx * SPEED;
+      vy = my * SPEED;
+      if (mx !== 0 && my !== 0) { vx *= 0.707; vy *= 0.707; }
+      moving = mx !== 0 || my !== 0;
+      if (moving) {
+        if (mx !== 0 && my === 0) this.lastDir = mx < 0 ? 'left' : 'right';
+        else if (my !== 0 && mx === 0) this.lastDir = my < 0 ? 'up' : 'down';
+        else this.lastDir = mx < 0 ? 'left' : 'right';
+      }
+    } else if (!manualOverride && this.autoTarget) {
+      // ── Autonomous movement ──
+      if (!this.autoArrived) {
+        const dx = this.autoTarget.x - this.player.x;
+        const dy = this.autoTarget.y - this.player.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < ARRIVE_THRESHOLD) {
+          this.autoArrived = true;
+          this.autoLingerTimer = 0;
+          // Face appropriate direction
+          if (this.rexStatus === 'working' || this.rexStatus === 'typing') {
+            this.lastDir = 'up'; // face desk
+          }
+        } else {
+          // Move toward target
+          vx = (dx / dist) * AUTO_SPEED;
+          vy = (dy / dist) * AUTO_SPEED;
+          moving = true;
+          // Update facing based on dominant axis
+          if (Math.abs(dx) > Math.abs(dy)) {
+            this.lastDir = dx < 0 ? 'left' : 'right';
+          } else {
+            this.lastDir = dy < 0 ? 'up' : 'down';
+          }
+        }
+      } else if (this.rexStatus === 'idle') {
+        // Linger at idle spot, then pick a new one
+        this.autoLingerTimer += delta;
+        if (this.autoLingerTimer > IDLE_LINGER_MS) {
+          this.pickIdleSpot();
+        }
+      }
+      // Working/typing: stay at desk (autoArrived = true, no movement)
     }
 
     this.player.setVelocity(vx, vy);
 
     // Y-sort: depth based on Rex's feet (bottom of collision box)
-    // Sprite origin is center (0.5, 0.5) of 32x64, so top = player.y - 32
-    // Collision offset Y from top = 48, height = 14 → feet = player.y - 32 + 48 + 14 = player.y + 30
     this.player.setDepth(10 + this.player.y + 30);
 
-    const moving = mx !== 0 || my !== 0;
-
     if (moving) {
-      if (mx !== 0 && my === 0) {
-        this.lastDir = mx < 0 ? 'left' : 'right';
-      } else if (my !== 0 && mx === 0) {
-        this.lastDir = my < 0 ? 'up' : 'down';
-      } else if (mx !== 0 && my !== 0) {
-        this.lastDir = mx < 0 ? 'left' : 'right';
-      }
       this.player.anims.play('walk-' + this.lastDir, true);
     } else {
-      this.player.anims.play('idle-' + this.lastDir, true);
+      const dir = this.autoArrived ? this.getFacingDir(this.rexStatus) : this.lastDir;
+      this.player.anims.play('idle-' + dir, true);
     }
 
-    // Glass z-index: when Rex is inside a glass section, glass renders on top of him.
-    // Glass sections: rows 7-8 (Y 224-288), rows 15-16 (Y 480-544)
-    // Rex's feet Y = player.y + 30. Check if feet are inside a glass section.
+    // ── Status bubble follows Rex ──
+    const icon = STATUS_ICONS[this.rexStatus];
+    this.statusBubble.setText(icon);
+    this.statusBubble.setPosition(this.player.x, this.player.y - 34);
+    this.statusBubble.setDepth(this.player.depth + 1);
+
+    // Glass z-index
     const feetY = this.player.y + 30;
     const inGlass = (feetY >= 7 * T && feetY < 9 * T) || (feetY >= 15 * T && feetY < 17 * T);
     this.glassLayer.setDepth(inGlass ? this.player.depth + 1 : 3);
