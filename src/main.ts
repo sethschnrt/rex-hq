@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { HQScene } from './scenes/HQScene';
 
+// Map is 20x22 tiles at 32px = 640x704
+// Render at native resolution, CSS scales to 100vw
 const MAP_W = 640;
 const MAP_H = 704;
 
@@ -27,3 +29,9 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 (window as any).__PHASER_GAME__ = game;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    game.destroy(true);
+  });
+}
