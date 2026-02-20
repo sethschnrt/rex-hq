@@ -143,62 +143,123 @@ interface GlassDoor {
  */
 type RexStatus = 'working' | 'typing' | 'idle';
 
-const DESK_POS   = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 };
-const COUCH_POS  = { x: 13 * T + T / 2, y: 19 * T + T / 2 };
+// Positions: pixel centers of walkable tiles (no collision bodies)
+// Rex's desk chair is at (4-5, 5-6) with collision — stand BEHIND it at row 5
+const DESK_POS   = { x: 5 * T, y: 5 * T }; // between chair tiles, facing up at desk
+// Lounge couch: couches at cols 10-11 and 13-14, rows 18-20 with collision
+// Sit in the gap between the two couches at col 12
+const COUCH_POS  = { x: 12 * T + T / 2, y: 19 * T + T / 2 };
 const STATUS_POLL_MS = 5000;
 const ARRIVE_THRESHOLD = 6;
 const AUTO_SPEED = SPEED;
 
-// Door centers (2x2 doors, center = top-left + 1 tile)
-const DOOR_LEFT_TOP    = { x: 4 * T, y: 8.5 * T }; // left door row 7-8
-const DOOR_LEFT_BOT    = { x: 4 * T, y: 16.5 * T }; // left door row 15-16
-const DOOR_RIGHT_TOP   = { x: 14 * T, y: 8.5 * T }; // right door row 7-8
-const DOOR_RIGHT_BOT   = { x: 14 * T, y: 16.5 * T }; // right door row 15-16
-
-// Mid-room waypoints for crossing the main office area (rows 7-15)
-const MID_LEFT  = { x: 4 * T, y: 12 * T };
-const MID_RIGHT = { x: 14 * T, y: 12 * T };
-
 type Pt = { x: number; y: number };
 
-// Waypoint routes between zones
-// Zone: top-left office (rows 0-7), top-right (rows 0-7 cols 10+),
-//        main office (rows 8-15), bottom-left kitchen (rows 16+), bottom-right lounge (rows 16+)
+// Pre-defined waypoint graph: navigate through doors and between desks
+// Corridors in main office run at cols 5-6, 9-10, 13-14 (gaps between desk pairs)
+// Doors are 2x2 at (3,7) and (13,7) for top glass wall, (3,15) and (13,15) for bottom
+// Door center X = (col+1)*T, walkable Y just past the door
+
+// Key waypoints (all in walkable space — verified against collision map)
+const WP = {
+  // Rex's office — open floor at col 2, row 5 (left of chair)
+  OFFICE_EXIT:    { x: 2 * T + T / 2, y: 6 * T },
+  // Just above top-left door
+  DOOR_TL_ABOVE:  { x: 4 * T, y: 7 * T },
+  // Just below top-left door
+  DOOR_TL_BELOW:  { x: 4 * T, y: 9 * T },
+  // Just above top-right door
+  DOOR_TR_ABOVE:  { x: 14 * T, y: 7 * T },
+  // Just below top-right door
+  DOOR_TR_BELOW:  { x: 14 * T, y: 9 * T },
+  // Main office corridor — col 5-6 gap (between desk pair 1 and 2)
+  MID_COL6:       { x: 6 * T, y: 12 * T },
+  // Main office corridor — col 9-10 gap (center aisle)
+  MID_COL10:      { x: 10 * T, y: 12 * T },
+  // Main office corridor — col 13-14 gap
+  MID_COL14:      { x: 14 * T, y: 12 * T },
+  // Just above bottom-left door
+  DOOR_BL_ABOVE:  { x: 4 * T, y: 15 * T },
+  // Just below bottom-left door
+  DOOR_BL_BELOW:  { x: 4 * T, y: 17 * T },
+  // Just above bottom-right door
+  DOOR_BR_ABOVE:  { x: 14 * T, y: 15 * T },
+  // Just below bottom-right door
+  DOOR_BR_BELOW:  { x: 14 * T, y: 17 * T },
+  // Lounge approach — col 12 gap between couches
+  LOUNGE_ENTER:   { x: 12 * T + T / 2, y: 17 * T + T / 2 },
+};
+
 function buildRoute(from: Pt, to: Pt): Pt[] {
   const fromRow = Math.floor(from.y / T);
   const toRow = Math.floor(to.y / T);
-  const fromCol = Math.floor(from.x / T);
-  const toCol = Math.floor(to.x / T);
 
-  // Same zone — direct
   const fromZone = fromRow < 8 ? 'top' : fromRow < 16 ? 'mid' : 'bot';
   const toZone = toRow < 8 ? 'top' : toRow < 16 ? 'mid' : 'bot';
-  const fromSide = fromCol < 10 ? 'L' : 'R';
-  const toSide = toCol < 10 ? 'L' : 'R';
 
-  if (fromZone === toZone && fromSide === toSide) return [to];
+  // Same zone — direct path
+  if (fromZone === toZone) return [to];
 
   const waypoints: Pt[] = [];
 
-  // From top zone → need to go through top doors
-  if (fromZone === 'top') {
-    waypoints.push(fromSide === 'L' ? DOOR_LEFT_TOP : DOOR_RIGHT_TOP);
+  // === DESK (top-left) → COUCH (bottom-right) ===
+  if (fromZone === 'top' && toZone === 'bot') {
+    waypoints.push(WP.OFFICE_EXIT);      // clear of chair
+    waypoints.push(WP.DOOR_TL_ABOVE);    // approach left door
+    waypoints.push(WP.DOOR_TL_BELOW);    // through left door
+    waypoints.push(WP.MID_COL6);         // into corridor
+    waypoints.push(WP.MID_COL14);        // cross to right side
+    waypoints.push(WP.DOOR_BR_ABOVE);    // approach right door
+    waypoints.push(WP.DOOR_BR_BELOW);    // through right door
+    waypoints.push(WP.LOUNGE_ENTER);     // into lounge
+    waypoints.push(to);
   }
-  // From bottom zone → need to go through bottom doors
-  if (fromZone === 'bot') {
-    waypoints.push(fromSide === 'L' ? DOOR_LEFT_BOT : DOOR_RIGHT_BOT);
+  // === COUCH (bottom-right) → DESK (top-left) ===
+  else if (fromZone === 'bot' && toZone === 'top') {
+    waypoints.push(WP.LOUNGE_ENTER);     // exit couch area
+    waypoints.push(WP.DOOR_BR_BELOW);    // approach right door
+    waypoints.push(WP.DOOR_BR_ABOVE);    // through right door
+    waypoints.push(WP.MID_COL14);        // into corridor
+    waypoints.push(WP.MID_COL6);         // cross to left side
+    waypoints.push(WP.DOOR_TL_BELOW);    // approach left door
+    waypoints.push(WP.DOOR_TL_ABOVE);    // through left door
+    waypoints.push(WP.OFFICE_EXIT);      // into office
+    waypoints.push(to);
+  }
+  // Mid to top
+  else if (fromZone === 'mid' && toZone === 'top') {
+    waypoints.push(WP.MID_COL6);
+    waypoints.push(WP.DOOR_TL_BELOW);
+    waypoints.push(WP.DOOR_TL_ABOVE);
+    waypoints.push(WP.OFFICE_EXIT);
+    waypoints.push(to);
+  }
+  // Mid to bot
+  else if (fromZone === 'mid' && toZone === 'bot') {
+    waypoints.push(WP.MID_COL14);
+    waypoints.push(WP.DOOR_BR_ABOVE);
+    waypoints.push(WP.DOOR_BR_BELOW);
+    waypoints.push(WP.LOUNGE_ENTER);
+    waypoints.push(to);
+  }
+  // Top to mid
+  else if (fromZone === 'top' && toZone === 'mid') {
+    waypoints.push(WP.OFFICE_EXIT);
+    waypoints.push(WP.DOOR_TL_ABOVE);
+    waypoints.push(WP.DOOR_TL_BELOW);
+    waypoints.push(to);
+  }
+  // Bot to mid
+  else if (fromZone === 'bot' && toZone === 'mid') {
+    waypoints.push(WP.LOUNGE_ENTER);
+    waypoints.push(WP.DOOR_BR_BELOW);
+    waypoints.push(WP.DOOR_BR_ABOVE);
+    waypoints.push(to);
+  }
+  else {
+    waypoints.push(to);
   }
 
-  // Now in mid zone — cross to correct side if needed
-  if (toZone === 'top') {
-    waypoints.push(toSide === 'L' ? DOOR_LEFT_TOP : DOOR_RIGHT_TOP);
-  } else if (toZone === 'bot') {
-    waypoints.push(toSide === 'L' ? DOOR_LEFT_BOT : DOOR_RIGHT_BOT);
-  } else {
-    // staying in mid
-  }
-
-  waypoints.push(to);
   return waypoints;
 }
 
@@ -555,8 +616,9 @@ export class HQScene extends Phaser.Scene {
     });
 
     // ── Create Rex ──
-    const startX = 5 * T + T / 2;
-    const startY = 4 * T + T / 2;
+    // Spawn in open space in Rex's office (col 2, row 5 — left of chair)
+    const startX = 2 * T + T / 2;
+    const startY = 5 * T + T / 2;
     this.player = this.physics.add.sprite(startX, startY, 'rex-idle', 0);
     // Y-sort depth updated every frame in update()
     this.player.setDepth(10 + startY + 30);
