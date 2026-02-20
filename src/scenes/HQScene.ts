@@ -503,16 +503,27 @@ export class HQScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.wallLayer);
     this.physics.add.collider(this.player, this.walls3dLayer);
     // Glass is one-way: blocks from below (south), pass-through from above (north)
-    // Rex walks behind glass when approaching from above, bumps into it from below
-    this.physics.add.collider(this.player, this.glassLayer, undefined, (player, tile) => {
-      const p = player as Phaser.Physics.Arcade.Sprite;
-      const t = tile as Phaser.Tilemaps.Tile;
-      // Rex's feet Y = body bottom = body.y + body.height
-      const feetY = p.body!.y + p.body!.height;
-      // Tile top edge in world coords
-      const tileTop = t.y * T;
-      // Only collide if Rex's feet are below (south of) the tile top
-      return feetY > tileTop;
+    // Glass walls at rows 7-8 (top Y=224) and rows 15-16 (top Y=480)
+    // If Rex's body top is above the glass section top → he's on the north side → no collision
+    // If Rex's body top is at or below → he's on the south side → collision active
+    const GLASS_SECTIONS = [7 * T, 15 * T]; // top Y of each glass wall section
+    this.physics.add.collider(this.player, this.glassLayer, undefined, (_player, _tile) => {
+      const p = _player as Phaser.Physics.Arcade.Sprite;
+      const t = _tile as Phaser.Tilemaps.Tile;
+      const tileTopY = t.y * T;
+      // Find which glass section this tile belongs to
+      let sectionTopY = tileTopY;
+      for (const st of GLASS_SECTIONS) {
+        if (tileTopY >= st && tileTopY < st + 2 * T) {
+          sectionTopY = st;
+          break;
+        }
+      }
+      // Rex's body top
+      const bodyTopY = p.body!.y;
+      // If Rex's body top is above the glass section → north side → pass through
+      // If at or below → south side → block
+      return bodyTopY >= sectionTopY;
     });
     this.physics.add.collider(this.player, this.furnitureColliders);
 
