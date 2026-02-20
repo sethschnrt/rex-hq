@@ -11,10 +11,6 @@ const config: Phaser.Types.Core.GameConfig = {
   height: MAP_H,
   backgroundColor: '#1a1a2e',
   pixelArt: true,
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
   physics: {
     default: 'arcade',
     arcade: {
@@ -31,9 +27,3 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 (window as any).__PHASER_GAME__ = game;
-
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    game.destroy(true);
-  });
-}

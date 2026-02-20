@@ -6,10 +6,14 @@
   <title>Rex HQ</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #0d1117; overflow: hidden; }
+    html, body { width: 100%; background: #1a1a2e; }
     .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 
-    /* ── Auth Gate ── */
+    /* ── Game canvas — same as original working version ── */
+    #game-container { width: 100%; }
+    #game-container canvas { display: block; width: 100% !important; height: auto !important; }
+
+    /* ── Auth Gate (fixed overlay) ── */
     #auth-gate {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       position: fixed; inset: 0; z-index: 9999;
@@ -36,35 +40,21 @@
     #auth-form button:hover { background: #2ea043; }
     #auth-error { color: #f85149; font-size: 0.4rem; margin-top: 0.75rem; min-height: 1em; }
 
-    /* ── RPG Dialog Box Style ──
-       Classic Pokémon: white bg, thick dark border with inset shadow effect */
+    /* ── RPG Dialog Box base style ── */
     .rpg-box {
-      background: #f8f8f0;
-      border: 3px solid #383838;
+      background: #f8f8f0; border: 3px solid #383838; color: #383838;
+      font-family: 'Press Start 2P', monospace;
       box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #c8c8b8;
-      color: #383838;
-      font-family: 'Press Start 2P', monospace;
     }
 
-    /* ── App Shell (always rendered, auth gate overlays it) ── */
-    #app {
-      display: flex;
-      width: 100%; height: 100vh; height: 100dvh;
-      flex-direction: column;
-      font-family: 'Press Start 2P', monospace;
-      background: #2a2a3a;
-    }
-
-    /* ── Top Bar (RPG menu bar) ── */
+    /* ── Top Bar (fixed) ── */
     #top-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 36px; z-index: 500;
       display: flex; align-items: center; justify-content: space-between;
-      height: 36px; padding: 0 8px;
-      background: #383838;
-      flex-shrink: 0; z-index: 100;
+      padding: 0 8px; background: #383838;
+      font-family: 'Press Start 2P', monospace;
     }
-    #top-bar .title {
-      font-size: 0.45rem; color: #f8f8f0; letter-spacing: 2px;
-    }
+    #top-bar .title { font-size: 0.45rem; color: #f8f8f0; letter-spacing: 2px; }
     #top-bar .right { display: flex; align-items: center; gap: 4px; }
     .bar-btn {
       background: #f8f8f0; border: 2px solid #585858; color: #383838;
@@ -82,37 +72,19 @@
       padding: 0 2px; border: 1px solid #383838;
     }
 
-    /* ── Game Area ── */
-    #game-area {
-      flex: 1; min-height: 0; position: relative; overflow: hidden;
-      background: #2a2a3a;
-    }
-    #game-container {
-      width: 100%; height: 100%;
-    }
-    #game-container canvas {
-      display: block;
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: contain;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-
-    /* ── Chat Bar (RPG dialog box at bottom) ── */
+    /* ── Chat Bar (fixed bottom) ── */
     #chat-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
       display: flex; align-items: center; gap: 6px;
       padding: 6px 8px;
-      flex-shrink: 0; z-index: 100;
-      background: #f8f8f0;
-      border-top: 3px solid #383838;
+      background: #f8f8f0; border-top: 3px solid #383838;
       box-shadow: inset 0 2px 0 #fff;
+      font-family: 'Press Start 2P', monospace;
     }
     #chat-input {
       flex: 1; height: 28px; padding: 0 8px;
       font-size: 16px; font-family: 'Press Start 2P', monospace;
-      background: #e8e8d8; border: 2px solid #a8a898; color: #383838;
-      outline: none;
+      background: #e8e8d8; border: 2px solid #a8a898; color: #383838; outline: none;
       box-shadow: inset 1px 1px 0 #c8c8b8;
     }
     #chat-input:focus { border-color: #5878a8; }
@@ -120,57 +92,19 @@
     #chat-send {
       height: 28px; padding: 0 10px;
       font-size: 0.4rem; font-family: 'Press Start 2P', monospace;
-      background: #f8f8f0; color: #383838; border: 2px solid #585858;
-      cursor: pointer;
+      background: #f8f8f0; color: #383838; border: 2px solid #585858; cursor: pointer;
       box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
     }
     #chat-send:active { box-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #a8a8a0; }
 
-    /* ── Side Panel ── */
-    #side-panel {
-      position: fixed; top: 0; right: -260px; width: 260px; height: 100vh;
-      z-index: 200; transition: right 0.15s ease;
-      display: flex; flex-direction: column;
-      background: #f8f8f0; border-left: 3px solid #383838;
-      box-shadow: inset 2px 0 0 #fff, -4px 0 8px rgba(0,0,0,0.3);
-    }
-    #side-panel.open { right: 0; }
-    #panel-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px; border-bottom: 2px solid #a8a898;
-    }
-    #panel-header .title { font-size: 0.45rem; color: #383838; letter-spacing: 1px; }
-    #panel-close {
-      background: #f8f8f0; border: 2px solid #585858; color: #383838;
-      font-size: 0.5rem; font-family: 'Press Start 2P', monospace; cursor: pointer;
-      padding: 2px 6px;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
-    }
-    #panel-tabs { display: flex; border-bottom: 2px solid #a8a898; }
-    .panel-tab {
-      flex: 1; padding: 8px 4px; text-align: center;
-      font-size: 0.3rem; font-family: 'Press Start 2P', monospace;
-      color: #787868; background: #e8e8d8; border: none; cursor: pointer;
-      border-right: 1px solid #a8a898;
-    }
-    .panel-tab:last-child { border-right: none; }
-    .panel-tab:hover { background: #f0f0e0; }
-    .panel-tab.active { color: #383838; background: #f8f8f0; font-weight: bold; }
-    #panel-content {
-      flex: 1; overflow-y: auto; padding: 10px;
-      font-size: 0.35rem; color: #585858; line-height: 2;
-    }
+    /* Push game content away from fixed bars */
+    #game-container { padding-top: 36px; padding-bottom: 44px; }
 
-    #panel-overlay {
-      display: none; position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,0.4);
-    }
-    #panel-overlay.open { display: block; }
-
-    /* ── Chat Messages (float over game) ── */
+    /* ── Chat Messages (over game) ── */
     #chat-messages {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      max-height: 35%; overflow-y: auto; padding: 6px 8px;
-      pointer-events: none; z-index: 50;
+      position: fixed; bottom: 44px; left: 0; right: 0;
+      max-height: 30vh; overflow-y: auto; padding: 6px 8px;
+      pointer-events: none; z-index: 400;
       display: flex; flex-direction: column; justify-content: flex-end;
       mask-image: linear-gradient(transparent 0%, black 40%);
       -webkit-mask-image: linear-gradient(transparent 0%, black 40%);
@@ -185,10 +119,43 @@
     .chat-msg.user { align-self: flex-end; background: #d8e8f8; border-color: #5878a8; }
     .chat-msg.rex { align-self: flex-start; }
     .chat-msg .sender { font-size: 0.2rem; color: #888; margin-bottom: 2px; }
+
+    /* ── Side Panel ── */
+    #side-panel {
+      position: fixed; top: 0; right: -260px; width: 260px; height: 100vh;
+      z-index: 600; transition: right 0.15s ease;
+      display: flex; flex-direction: column;
+      background: #f8f8f0; border-left: 3px solid #383838;
+      box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+      font-family: 'Press Start 2P', monospace;
+    }
+    #side-panel.open { right: 0; }
+    #panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px; border-bottom: 2px solid #a8a898;
+    }
+    #panel-header .title { font-size: 0.45rem; color: #383838; }
+    #panel-close {
+      background: #f8f8f0; border: 2px solid #585858; color: #383838;
+      font-size: 0.5rem; font-family: 'Press Start 2P', monospace; cursor: pointer; padding: 2px 6px;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
+    }
+    #panel-tabs { display: flex; border-bottom: 2px solid #a8a898; }
+    .panel-tab {
+      flex: 1; padding: 8px 4px; text-align: center;
+      font-size: 0.3rem; font-family: 'Press Start 2P', monospace;
+      color: #787868; background: #e8e8d8; border: none; cursor: pointer;
+      border-right: 1px solid #a8a898;
+    }
+    .panel-tab:last-child { border-right: none; }
+    .panel-tab.active { color: #383838; background: #f8f8f0; }
+    #panel-content { flex: 1; overflow-y: auto; padding: 10px; font-size: 0.35rem; color: #585858; line-height: 2; }
+    #panel-overlay { display: none; position: fixed; inset: 0; z-index: 550; background: rgba(0,0,0,0.4); }
+    #panel-overlay.open { display: block; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/rex-hq/assets/index-DwTsn0KA.js"></script>
+  <script type="module" crossorigin src="/rex-hq/assets/index-DxJsoxCB.js"></script>
 </head>
 <body>
   <!-- Auth Gate -->
@@ -205,35 +172,33 @@
     </div>
   </div>
 
-  <!-- App Shell -->
-  <div id="app">
-    <div id="top-bar">
-      <span class="title">REX HQ</span>
-      <div class="right">
-        <button class="bar-btn" id="btn-music" title="Music">♫</button>
-        <button class="bar-btn" id="btn-notif" title="Inbox">
-          ✉<span class="badge" id="notif-badge" style="display:none">0</span>
-        </button>
-        <button class="bar-btn" id="btn-menu" title="Menu">☰</button>
-      </div>
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <span class="title">REX HQ</span>
+    <div class="right">
+      <button class="bar-btn" id="btn-music">♫</button>
+      <button class="bar-btn" id="btn-notif">✉<span class="badge" id="notif-badge" style="display:none">0</span></button>
+      <button class="bar-btn" id="btn-menu">☰</button>
     </div>
+  </div>
 
-    <div id="game-area">
-      <div id="game-container"></div>
-      <div id="chat-messages"></div>
-    </div>
+  <!-- Game -->
+  <div id="game-container"></div>
 
-    <div id="chat-bar">
-      <input type="text" id="chat-input" placeholder="Message Rex..." autocomplete="off" />
-      <button id="chat-send">▶</button>
-    </div>
+  <!-- Chat Messages -->
+  <div id="chat-messages"></div>
+
+  <!-- Chat Bar -->
+  <div id="chat-bar">
+    <input type="text" id="chat-input" placeholder="Message Rex..." autocomplete="off" />
+    <button id="chat-send">▶</button>
   </div>
 
   <!-- Side Panel -->
   <div id="panel-overlay"></div>
   <div id="side-panel">
     <div id="panel-header">
-      <span class="title" id="panel-title">MENU</span>
+      <span class="title">MENU</span>
       <button id="panel-close">✕</button>
     </div>
     <div id="panel-tabs">
@@ -241,9 +206,7 @@
       <button class="panel-tab" data-tab="journal">LOG</button>
       <button class="panel-tab" data-tab="settings">CFG</button>
     </div>
-    <div id="panel-content">
-      <p>No tasks yet.</p>
-    </div>
+    <div id="panel-content"><p>No tasks yet.</p></div>
   </div>
 
   <script>
@@ -253,9 +216,7 @@
       const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
       return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('');
     }
-    window.__REX_AUTH = false;
     function unlock() {
-      window.__REX_AUTH = true;
       document.getElementById('auth-gate').style.display = 'none';
     }
     document.getElementById('auth-form').addEventListener('submit', async (e) => {
@@ -273,7 +234,6 @@
     document.getElementById('panel-close').addEventListener('click', closePanel);
     overlay.addEventListener('click', closePanel);
     function closePanel() { panel.classList.remove('open'); overlay.classList.remove('open'); }
-
     document.querySelectorAll('.panel-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
@@ -286,7 +246,7 @@
       });
     });
 
-    // Chat placeholder
+    // Chat
     const chatInput = document.getElementById('chat-input');
     const chatMessages = document.getElementById('chat-messages');
     function sendChat() {
@@ -310,8 +270,6 @@
     // Music placeholder
     let mp = false;
     document.getElementById('btn-music').addEventListener('click', e => { mp = !mp; e.target.style.color = mp ? '#5878a8' : ''; });
-
-    // Notif placeholder
     document.getElementById('btn-notif').addEventListener('click', () => { panel.classList.add('open'); overlay.classList.add('open'); });
   </script>
 </body>
