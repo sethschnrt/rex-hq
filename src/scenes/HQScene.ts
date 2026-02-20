@@ -149,7 +149,7 @@ type RexStatus = 'working' | 'typing' | 'idle';
 // All positions use feet-corrected Y: py = row*32 - 7
 function rc(col: number, row: number): Pt { return { x: col * T + T / 2, y: row * T - 7 }; }
 
-const DESK_POS = rc(7, 5);  // right of desk, facing left toward monitors
+const DESK_POS = rc(5, 5);  // on desk chair, facing up toward monitors
 const STATUS_POLL_MS = 5000;
 const ARRIVE_THRESHOLD = 6;
 const AUTO_SPEED = SPEED;
@@ -185,8 +185,9 @@ const IDLE_ACTIVITIES: IdleActivity[] = [
  */
 const W = {
   // Office → door
-  DESK:     rc(7, 5),   // A
-  OFF_HALL: rc(7, 7),   // A2 — below chair
+  DESK:     rc(5, 5),   // A — on desk chair
+  DESK_R:   rc(7, 5),   // A1 — right of desk (avoid chair collision at 5,6)
+  OFF_HALL: rc(7, 7),   // A2 — below desk area, on glass row
   DOOR_TL:  rc(3, 7),   // B — at top-left door
   // Door → main office
   CORR_TL:  rc(3, 9),   // D — below TL door
@@ -211,7 +212,7 @@ const W = {
 const TO_SPINE: Record<string, { spine: Pt; path: Pt[] }> = {
   // Office (top zone) — connects to CORR_TL via door
   'look_painting': { spine: W.DESK,     path: [rc(1, 5), W.DESK] },
-  'desk':          { spine: W.CORR_TL,  path: [W.DESK, W.OFF_HALL, W.DOOR_TL, W.CORR_TL] },
+  'desk':          { spine: W.CORR_TL,  path: [W.DESK, W.DESK_R, W.OFF_HALL, W.DOOR_TL, W.CORR_TL] },
   // Mid zone — connects at various spine points
   'check_monitor': { spine: W.CORR_TL,  path: [W.CORR_TL] },
   'water_plant':   { spine: W.CORR_C5,  path: [W.CORR_C5] },
@@ -225,9 +226,9 @@ const TO_SPINE: Record<string, { spine: Pt; path: Pt[] }> = {
 // Routes FROM a spine node TO a location
 const FROM_SPINE: Record<string, { spine: Pt; path: Pt[] }> = {
   'look_painting': { spine: W.DESK,     path: [rc(1, 5), rc(1, 4)] },
-  'desk':          { spine: W.CORR_TL,  path: [W.DOOR_TL, W.OFF_HALL, W.DESK] },
+  'desk':          { spine: W.CORR_TL,  path: [W.DOOR_TL, W.OFF_HALL, W.DESK_R, W.DESK] },
   'check_monitor': { spine: W.CORR_TL,  path: [rc(9, 9)] },
-  'water_plant':   { spine: W.CORR_C5,  path: [rc(6, 12)] },
+  'water_plant':   { spine: W.CORR_C5,  path: [rc(5, 12), rc(6, 12)] },
   'wander':        { spine: W.CORR_TL,  path: [rc(9, 9), rc(9, 12)] },
   'watch_tv':      { spine: W.LNGE_ENT, path: [rc(13, 17), rc(13, 19)] },
   'ping_pong':     { spine: W.LNGE_15,  path: [rc(15, 20)] },
@@ -235,7 +236,7 @@ const FROM_SPINE: Record<string, { spine: Pt; path: Pt[] }> = {
 };
 
 // The ordered spine from top to bottom
-const SPINE: Pt[] = [W.DESK, W.OFF_HALL, W.DOOR_TL, W.CORR_TL, W.CORR_C5, W.CORR_BOT, W.CORR_R, W.DOOR_BR, W.LNGE_ENT, W.LNGE_15, W.LNGE_B15, W.LNGE_B18];
+const SPINE: Pt[] = [W.DESK, W.DESK_R, W.OFF_HALL, W.DOOR_TL, W.CORR_TL, W.CORR_C5, W.CORR_BOT, W.CORR_R, W.DOOR_BR, W.LNGE_ENT, W.LNGE_15, W.LNGE_B15, W.LNGE_B18];
 
 function spineIndex(pt: Pt): number {
   for (let i = 0; i < SPINE.length; i++) {
@@ -246,7 +247,7 @@ function spineIndex(pt: Pt): number {
 
 function buildRoute(fromName: string, toName: string): Pt[] {
   // Special case: painting ↔ desk (both in office, direct route)
-  if (fromName === 'look_painting' && toName === 'desk') return [rc(1, 5), DESK_POS];
+  if (fromName === 'look_painting' && toName === 'desk') return [rc(1, 5), rc(5, 5)];
   if (fromName === 'desk' && toName === 'look_painting') return [rc(1, 5), rc(1, 4)];
 
   const exit = TO_SPINE[fromName];
@@ -906,7 +907,7 @@ export class HQScene extends Phaser.Scene {
           } else {
             // Face the direction defined by the activity
             const act = IDLE_ACTIVITIES.find(a => a.name === this.currentActivity);
-            this.lastDir = act ? act.face : (this.currentActivity === 'desk' ? 'left' : 'down');
+            this.lastDir = act ? act.face : (this.currentActivity === 'desk' ? 'up' : 'down');
             // Set linger timer for idle activities
             if (this.rexStatus === 'idle' && this.currentActivity !== 'desk') {
               this.idleLingerUntil = time + IDLE_LINGER_MIN + Math.random() * (IDLE_LINGER_MAX - IDLE_LINGER_MIN);
