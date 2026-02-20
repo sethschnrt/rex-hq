@@ -139,94 +139,133 @@ interface GlassDoor {
 /* ── Rex activity states ──
  * 'working' — at desk, building/deploying (wrench bubble)
  * 'typing'  — at desk, actively writing a reply (dots bubble)
- * 'idle'    — on the couch watching TV
+ * 'idle'    — roaming the office: couch, ping pong, plants, window, etc.
  */
 type RexStatus = 'working' | 'typing' | 'idle';
 
-// Feet-corrected positions: py = row*32 - 7 puts feet center in that row
-const DESK_POS   = { x: 7 * T + T / 2, y: 5 * T - 7 };  // feet in row 5 (open, right of desk)
-const COUCH_POS  = { x: 13 * T + T / 2, y: 19 * T - 7 }; // feet in row 19, on right couch facing TV
+// All positions use feet-corrected Y: py = row*32 - 7
+function rc(col: number, row: number): Pt { return { x: col * T + T / 2, y: row * T - 7 }; }
+
+const DESK_POS = rc(7, 5);  // right of desk, facing left toward monitors
 const STATUS_POLL_MS = 5000;
 const ARRIVE_THRESHOLD = 6;
 const AUTO_SPEED = SPEED;
+const IDLE_LINGER_MIN = 8000;   // min ms to stay at an idle spot
+const IDLE_LINGER_MAX = 20000;  // max ms
 
 type Pt = { x: number; y: number };
 
-// Pre-defined waypoint graph: navigate through doors and between desks
-// Corridors in main office run at cols 5-6, 9-10, 13-14 (gaps between desk pairs)
-// Doors are 2x2 at (3,7) and (13,7) for top glass wall, (3,15) and (13,15) for bottom
-// Door center X = (col+1)*T, walkable Y just past the door
+/* ── Idle activities ──
+ * Each has a destination, facing direction, and zone (top/mid/bot).
+ * Rex randomly picks one when idle and walks there.
+ */
+interface IdleActivity {
+  name: string;
+  pos: Pt;
+  face: string;    // direction Rex faces when arrived
+  zone: 'top' | 'mid' | 'bot';
+}
 
-// Key waypoints (all in walkable space — verified against collision map)
-const WP = {
-  // IMPORTANT: Rex's feet = player.y + 23. All Y values are calculated so
-  // feet land in the intended row: py = row*32 - 23 + 16 = row*32 - 7
-  // X values use tile center: px = col*32 + 16
+const IDLE_ACTIVITIES: IdleActivity[] = [
+  { name: 'watch_tv',       pos: rc(13, 19), face: 'left',  zone: 'bot' },
+  { name: 'ping_pong',      pos: rc(15, 20), face: 'up',    zone: 'bot' },
+  { name: 'look_window',    pos: rc(18, 19), face: 'right', zone: 'bot' },
+  { name: 'look_painting',  pos: rc(1, 4),   face: 'up',    zone: 'top' },
+  { name: 'water_plant',    pos: rc(6, 12),  face: 'up',    zone: 'mid' },
+  { name: 'check_monitor',  pos: rc(9, 9),   face: 'up',    zone: 'mid' },
+  { name: 'wander',         pos: rc(9, 12),  face: 'down',  zone: 'mid' },
+];
 
-  // Office col 7 row 5 — right of desk
-  A: { x: 7 * T + T / 2, y: 5 * T - 7 },  // feet in row 5
-  // Down col 7 to row 7 (below chair, row 7 is open at col 7)
-  A2: { x: 7 * T + T / 2, y: 7 * T - 7 }, // feet in row 7
-  // Left across row 7 to door col 3 (row 7 cols 3-7 all walkable/door)
-  B: { x: 3 * T + T / 2, y: 7 * T - 7 },  // feet in row 7, at door col
-  // Down through door (cols 3-4, rows 7-8 = D tiles)
-  C: { x: 3 * T + T / 2, y: 7 * T - 7 },  // feet in row 7 (door top)
-  D: { x: 3 * T + T / 2, y: 9 * T - 7 },  // feet in row 9 (below door)
-  // Right to corridor col 5 at row 9
-  E: { x: 5 * T + T / 2, y: 9 * T - 7 },  // feet in row 9
-  // Down corridor col 5 to row 14
-  F: { x: 5 * T + T / 2, y: 14 * T - 7 }, // feet in row 14
-  // Right to col 13 at row 14 (open corridor)
-  G: { x: 13 * T + T / 2, y: 14 * T - 7 }, // feet in row 14
-  // Down to door row 15 (cols 13-14 = D)
-  H: { x: 13 * T + T / 2, y: 15 * T - 7 }, // feet in row 15 (door)
-  // Down through door to row 17
-  I: { x: 13 * T + T / 2, y: 17 * T - 7 }, // feet in row 17
-  // Col 13 — same X as couch destination, then walk straight down
-  J: { x: 13 * T + T / 2, y: 17 * T - 7 }, // feet in row 17
+/* ── Waypoint spine (verified collision-free) ──
+ * All routes thread through these axis-aligned waypoints.
+ * Positions use feet-corrected Y = row*32 - 7
+ */
+const W = {
+  // Office → door
+  DESK:     rc(7, 5),   // A
+  OFF_HALL: rc(7, 7),   // A2 — below chair
+  DOOR_TL:  rc(3, 7),   // B — at top-left door
+  // Door → main office
+  CORR_TL:  rc(3, 9),   // D — below TL door
+  CORR_C5:  rc(5, 9),   // E — corridor col 5
+  CORR_BOT: rc(5, 14),  // F — bottom of corridor
+  CORR_R:   rc(13, 14), // G — right side corridor
+  // Main office → lounge
+  DOOR_BR:  rc(13, 15), // H — bottom-right door
+  LNGE_ENT: rc(13, 17), // I — lounge entrance
+  // Lounge internal
+  LNGE_15:  rc(15, 17), // right side of lounge (row 17)
+  LNGE_B15: rc(15, 20), // bottom of lounge col 15
+  LNGE_B18: rc(18, 20), // bottom-right lounge
 };
 
-function buildRoute(from: Pt, to: Pt): Pt[] {
-  const fromRow = Math.floor(from.y / T);
-  const toRow = Math.floor(to.y / T);
+/* ── Named routes from each zone to the spine ──
+ * To go between any two named locations, we compose:
+ *   [location → spine] + [spine segment] + [spine → location]
+ */
 
-  const fromZone = fromRow < 8 ? 'top' : fromRow < 16 ? 'mid' : 'bot';
-  const toZone = toRow < 8 ? 'top' : toRow < 16 ? 'mid' : 'bot';
+// Routes FROM a location TO the spine node it connects to
+const TO_SPINE: Record<string, { spine: Pt; path: Pt[] }> = {
+  // Office (top zone) — connects to CORR_TL via door
+  'look_painting': { spine: W.DESK,     path: [rc(1, 5), W.DESK] },
+  'desk':          { spine: W.CORR_TL,  path: [W.DESK, W.OFF_HALL, W.DOOR_TL, W.CORR_TL] },
+  // Mid zone — connects at various spine points
+  'check_monitor': { spine: W.CORR_TL,  path: [W.CORR_TL] },
+  'water_plant':   { spine: W.CORR_C5,  path: [W.CORR_C5] },
+  'wander':        { spine: W.CORR_TL,  path: [rc(9, 9), W.CORR_TL] },
+  // Bot zone — connects to LNGE_ENT
+  'watch_tv':      { spine: W.LNGE_ENT, path: [rc(13, 17), W.LNGE_ENT] },
+  'ping_pong':     { spine: W.LNGE_15,  path: [W.LNGE_15] },
+  'look_window':   { spine: W.LNGE_B15, path: [rc(18, 20), W.LNGE_B15] },
+};
 
-  // Same zone — direct path
-  if (fromZone === toZone) return [to];
+// Routes FROM a spine node TO a location
+const FROM_SPINE: Record<string, { spine: Pt; path: Pt[] }> = {
+  'look_painting': { spine: W.DESK,     path: [rc(1, 5), rc(1, 4)] },
+  'desk':          { spine: W.CORR_TL,  path: [W.DOOR_TL, W.OFF_HALL, W.DESK] },
+  'check_monitor': { spine: W.CORR_TL,  path: [rc(9, 9)] },
+  'water_plant':   { spine: W.CORR_C5,  path: [rc(6, 12)] },
+  'wander':        { spine: W.CORR_TL,  path: [rc(9, 9), rc(9, 12)] },
+  'watch_tv':      { spine: W.LNGE_ENT, path: [rc(13, 17), rc(13, 19)] },
+  'ping_pong':     { spine: W.LNGE_15,  path: [rc(15, 20)] },
+  'look_window':   { spine: W.LNGE_B15, path: [rc(18, 20), rc(18, 19)] },
+};
 
-  const waypoints: Pt[] = [];
+// The ordered spine from top to bottom
+const SPINE: Pt[] = [W.DESK, W.OFF_HALL, W.DOOR_TL, W.CORR_TL, W.CORR_C5, W.CORR_BOT, W.CORR_R, W.DOOR_BR, W.LNGE_ENT, W.LNGE_15, W.LNGE_B15, W.LNGE_B18];
 
-  // === DESK (top-left) → COUCH (bottom-right) ===
-  if (fromZone === 'top' && toZone === 'bot') {
-    waypoints.push(WP.A, WP.A2, WP.B, WP.C, WP.D, WP.E, WP.F, WP.G, WP.H, WP.I, WP.J, to);
+function spineIndex(pt: Pt): number {
+  for (let i = 0; i < SPINE.length; i++) {
+    if (Math.abs(SPINE[i].x - pt.x) < 2 && Math.abs(SPINE[i].y - pt.y) < 2) return i;
   }
-  // === COUCH (bottom-right) → DESK (top-left) ===
-  else if (fromZone === 'bot' && toZone === 'top') {
-    waypoints.push(WP.J, WP.I, WP.H, WP.G, WP.F, WP.E, WP.D, WP.C, WP.B, WP.A2, WP.A, to);
-  }
-  // Mid to top
-  else if (fromZone === 'mid' && toZone === 'top') {
-    waypoints.push(WP.E, WP.D, WP.C, WP.B, WP.A2, WP.A, to);
-  }
-  // Mid to bot
-  else if (fromZone === 'mid' && toZone === 'bot') {
-    waypoints.push(WP.G, WP.H, WP.I, WP.J, to);
-  }
-  // Top to mid
-  else if (fromZone === 'top' && toZone === 'mid') {
-    waypoints.push(WP.A, WP.A2, WP.B, WP.C, WP.D, WP.E, to);
-  }
-  // Bot to mid
-  else if (fromZone === 'bot' && toZone === 'mid') {
-    waypoints.push(WP.J, WP.I, WP.H, WP.G, to);
-  }
-  else {
-    waypoints.push(to);
+  return -1;
+}
+
+function buildRoute(fromName: string, toName: string): Pt[] {
+  // Special case: painting ↔ desk (both in office, direct route)
+  if (fromName === 'look_painting' && toName === 'desk') return [rc(1, 5), DESK_POS];
+  if (fromName === 'desk' && toName === 'look_painting') return [rc(1, 5), rc(1, 4)];
+
+  const exit = TO_SPINE[fromName];
+  const enter = FROM_SPINE[toName];
+  if (!exit || !enter) return [];
+
+  const iA = spineIndex(exit.spine);
+  const iB = spineIndex(enter.spine);
+  if (iA < 0 || iB < 0) return [];
+
+  // Build: exit path + spine segment + enter path
+  const route: Pt[] = [...exit.path];
+
+  // Add spine waypoints between the two connection points
+  if (iA < iB) {
+    for (let i = iA + 1; i <= iB; i++) route.push(SPINE[i]);
+  } else if (iA > iB) {
+    for (let i = iA - 1; i >= iB; i--) route.push(SPINE[i]);
   }
 
-  return waypoints;
+  route.push(...enter.path);
+  return route;
 }
 
 export class HQScene extends Phaser.Scene {
@@ -247,6 +286,9 @@ export class HQScene extends Phaser.Scene {
   private waypoints: Pt[] = [];
   private autoArrived = false;
   private lastManualInput = 0;
+  private currentActivity = 'desk';       // name of current/target location
+  private idleLingerUntil = 0;            // timestamp when Rex should pick a new idle spot
+  private lastIdleActivity = '';          // avoid picking the same spot twice in a row
 
   constructor() {
     super({ key: 'HQScene' });
@@ -647,11 +689,9 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setOrigin(0.5, 1).setDepth(99999);
     this.statusBubble.setVisible(false);
 
-    // ── Start status polling + auto-walk to position ──
-    this.waypoints = buildRoute(
-      { x: this.player.x, y: this.player.y },
-      COUCH_POS
-    );
+    // ── Start status polling + pick first idle activity ──
+    this.currentActivity = 'desk';
+    this.pickIdleActivity();
     this.pollStatus();
 
     // ── Input: WASD only (arrow keys conflict with browser scroll) ──
@@ -764,6 +804,23 @@ export class HQScene extends Phaser.Scene {
     pad.addEventListener('touchcancel', endTouch, { passive: false });
   }
 
+  // ── Idle activity picker ──
+  private pickIdleActivity() {
+    // Pick a random idle activity different from current
+    const candidates = IDLE_ACTIVITIES.filter(a => a.name !== this.lastIdleActivity);
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    this.lastIdleActivity = pick.name;
+    this.navigateTo(pick.name);
+  }
+
+  private navigateTo(targetName: string) {
+    const route = buildRoute(this.currentActivity, targetName);
+    this.currentActivity = targetName;
+    this.waypoints = route;
+    this.autoArrived = false;
+    this.idleLingerUntil = 0;
+  }
+
   // ── Status polling ──
   private async pollStatus() {
     try {
@@ -773,13 +830,11 @@ export class HQScene extends Phaser.Scene {
         const newStatus = (data.status || 'idle') as RexStatus;
         if (newStatus !== this.rexStatus) {
           this.rexStatus = newStatus;
-          const dest = newStatus === 'idle' ? COUCH_POS : DESK_POS;
-          this.waypoints = buildRoute(
-            { x: this.player.x, y: this.player.y },
-            dest
-          );
-          this.autoArrived = false;
-          if (newStatus !== 'idle') {
+          if (newStatus === 'idle') {
+            this.pickIdleActivity();
+          } else {
+            // Go to desk for work
+            this.navigateTo('desk');
             this.statusBubble.play('emote-' + newStatus);
           }
         }
@@ -814,8 +869,6 @@ export class HQScene extends Phaser.Scene {
       else if (mx !== 0) this.lastDir = mx < 0 ? 'left' : 'right';
       // Rebuild route when manual control ends
       this.autoArrived = false;
-      const dest = this.rexStatus === 'idle' ? COUCH_POS : DESK_POS;
-      this.waypoints = buildRoute({ x: this.player.x, y: this.player.y }, dest);
     } else if (this.waypoints.length > 0 && !this.autoArrived) {
       // ── Auto-walk along waypoints ──
       const wp = this.waypoints[0];
@@ -827,8 +880,13 @@ export class HQScene extends Phaser.Scene {
         this.waypoints.shift();
         if (this.waypoints.length === 0) {
           this.autoArrived = true;
-          // Face desk (left) or TV (left — TV is west of couch)
-          this.lastDir = 'left';
+          // Face the direction defined by the activity
+          const act = IDLE_ACTIVITIES.find(a => a.name === this.currentActivity);
+          this.lastDir = act ? act.face : (this.currentActivity === 'desk' ? 'left' : 'down');
+          // Set linger timer for idle activities
+          if (this.rexStatus === 'idle' && this.currentActivity !== 'desk') {
+            this.idleLingerUntil = time + IDLE_LINGER_MIN + Math.random() * (IDLE_LINGER_MAX - IDLE_LINGER_MIN);
+          }
         }
       } else {
         // Move one axis at a time — no diagonal (RPG style)
@@ -841,6 +899,10 @@ export class HQScene extends Phaser.Scene {
         }
         moving = true;
       }
+    } else if (this.autoArrived && this.rexStatus === 'idle' && this.idleLingerUntil > 0 && time > this.idleLingerUntil) {
+      // ── Linger expired — pick a new idle spot ──
+      this.idleLingerUntil = 0;
+      this.pickIdleActivity();
     }
 
     this.player.setVelocity(vx, vy);
@@ -856,7 +918,7 @@ export class HQScene extends Phaser.Scene {
     // ── Status bubble follows Rex ──
     this.statusBubble.setPosition(this.player.x, this.player.y - 34);
     this.statusBubble.setDepth(this.player.depth + 1);
-    // Show bubble only when at desk working/typing, not when idle on couch
+    // Show bubble only when at desk working/typing
     this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle');
 
     // Glass z-index
