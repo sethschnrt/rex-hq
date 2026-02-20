@@ -274,7 +274,6 @@ function buildRoute(fromName: string, toName: string): Pt[] {
 
 export class HQScene extends Phaser.Scene {
   public player!: Phaser.Physics.Arcade.Sprite;
-  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private wallLayer!: Phaser.Tilemaps.TilemapLayer;
   private walls3dLayer!: Phaser.Tilemaps.TilemapLayer;
   private glassLayer!: Phaser.Tilemaps.TilemapLayer;
@@ -282,18 +281,15 @@ export class HQScene extends Phaser.Scene {
   private furnitureColliders!: Phaser.Physics.Arcade.StaticGroup;
   private lastDir: string = 'down';
   public doors: GlassDoor[] = [];
-  private touchDir = { x: 0, y: 0 };
 
   // ── Autonomous behavior ──
   private rexStatus: RexStatus = 'idle';
   private statusBubble!: Phaser.GameObjects.Sprite;
   private waypoints: Pt[] = [];
   private autoArrived = false;
-  private lastManualInput = 0;
   private currentActivity = 'desk';       // name of current/target location
   private idleLingerUntil = 0;            // timestamp when Rex should pick a new idle spot
   private lastIdleActivity = '';          // avoid picking the same spot twice in a row
-  // private debugText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'HQScene' });
@@ -697,114 +693,10 @@ export class HQScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => this.pickIdleActivity());
     this.pollStatus();
 
-    // ── Input: WASD only (arrow keys conflict with browser scroll) ──
-    this.keys = {
-      W: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-      A: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-      S: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-      D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-    };
-
-    // ── Mobile touch d-pad ──
-    this.createTouchControls();
-
     // Camera
     const cam = this.cameras.main;
     cam.setBounds(0, 0, MAP_PX_W, MAP_PX_H);
     cam.setBackgroundColor('#1a1a2e');
-  }
-
-  private createTouchControls() {
-    // Only show on touch devices
-    if (!('ontouchstart' in window)) return;
-
-    const pad = document.createElement('div');
-    pad.id = 'dpad';
-    pad.innerHTML = `
-      <div class="dpad-row"><button data-dir="up">▲</button></div>
-      <div class="dpad-row">
-        <button data-dir="left">◀</button>
-        <div class="dpad-spacer"></div>
-        <button data-dir="right">▶</button>
-      </div>
-      <div class="dpad-row"><button data-dir="down">▼</button></div>
-    `;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      #dpad {
-        position: fixed; bottom: 24px; left: 24px; z-index: 9999;
-        display: flex; flex-direction: column; align-items: center;
-        user-select: none; -webkit-user-select: none;
-        touch-action: none;
-      }
-      .dpad-row { display: flex; align-items: center; }
-      .dpad-spacer { width: 56px; height: 56px; }
-      #dpad button {
-        width: 56px; height: 56px; border: none; border-radius: 10px;
-        background: rgba(255,255,255,0.25); color: #fff; font-size: 22px;
-        display: flex; align-items: center; justify-content: center;
-        margin: 2px; -webkit-tap-highlight-color: transparent;
-        touch-action: none;
-      }
-      #dpad button.active { background: rgba(255,255,255,0.5); }
-    `;
-    document.head.appendChild(style);
-    document.body.appendChild(pad);
-
-    const dirMap: Record<string, { x: number; y: number }> = {
-      up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
-      left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
-    };
-
-    const activeSet = new Set<string>();
-
-    const update = () => {
-      this.touchDir.x = 0;
-      this.touchDir.y = 0;
-      for (const d of activeSet) {
-        this.touchDir.x += dirMap[d].x;
-        this.touchDir.y += dirMap[d].y;
-      }
-    };
-
-    pad.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      for (const t of Array.from(e.changedTouches)) {
-        const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement;
-        const dir = el?.dataset?.dir;
-        if (dir) { activeSet.add(dir); el.classList.add('active'); }
-      }
-      update();
-    }, { passive: false });
-
-    pad.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      // Clear all, re-detect
-      activeSet.clear();
-      pad.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      for (const t of Array.from(e.touches)) {
-        const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement;
-        const dir = el?.dataset?.dir;
-        if (dir) { activeSet.add(dir); el.classList.add('active'); }
-      }
-      update();
-    }, { passive: false });
-
-    const endTouch = (e: TouchEvent) => {
-      e.preventDefault();
-      // Remove ended touches, re-check remaining
-      activeSet.clear();
-      pad.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      for (const t of Array.from(e.touches)) {
-        const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement;
-        const dir = el?.dataset?.dir;
-        if (dir) { activeSet.add(dir); el.classList.add('active'); }
-      }
-      update();
-    };
-    pad.addEventListener('touchend', endTouch, { passive: false });
-    pad.addEventListener('touchcancel', endTouch, { passive: false });
   }
 
   // ── Idle activity picker ──
@@ -857,33 +749,12 @@ export class HQScene extends Phaser.Scene {
     this.time.delayedCall(STATUS_POLL_MS, () => this.pollStatus());
   }
 
-  update(time: number, delta: number) {
-    const up = this.keys.W.isDown || this.touchDir.y < 0;
-    const down = this.keys.S.isDown || this.touchDir.y > 0;
-    const left = this.keys.A.isDown || this.touchDir.x < 0;
-    const right = this.keys.D.isDown || this.touchDir.x > 0;
-
-    const manualInput = up || down || left || right;
-    if (manualInput) this.lastManualInput = time;
-
+  update(time: number, _delta: number) {
     let vx = 0;
     let vy = 0;
     let moving = false;
 
-    if (manualInput) {
-      // ── Manual control ──
-      const mx = (left ? -1 : 0) + (right ? 1 : 0);
-      const my = (up ? -1 : 0) + (down ? 1 : 0);
-      vx = mx * SPEED;
-      vy = my * SPEED;
-      if (mx !== 0 && my !== 0) { vx *= 0.707; vy *= 0.707; }
-      moving = true;
-      if (mx !== 0 && my === 0) this.lastDir = mx < 0 ? 'left' : 'right';
-      else if (my !== 0 && mx === 0) this.lastDir = my < 0 ? 'up' : 'down';
-      else if (mx !== 0) this.lastDir = mx < 0 ? 'left' : 'right';
-      // Rebuild route when manual control ends
-      this.autoArrived = false;
-    } else if (this.waypoints.length > 0 && !this.autoArrived) {
+    if (this.waypoints.length > 0 && !this.autoArrived) {
       // ── Auto-walk along waypoints ──
       const wp = this.waypoints[0];
       const dx = wp.x - this.player.x;
@@ -952,7 +823,7 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setPosition(this.player.x, this.player.y - 20);
     this.statusBubble.setDepth(this.player.depth + 1);
     // Show bubble only when at desk working/typing
-    this.statusBubble.setVisible(!manualInput && this.rexStatus !== 'idle');
+    this.statusBubble.setVisible(this.rexStatus !== 'idle');
 
     // Glass z-index
     const feetY = this.player.y + 30;
