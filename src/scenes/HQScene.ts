@@ -59,14 +59,13 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
 
   // ── Conference ──
   6965: 'bottom', 6966: 'bottom', 6967: 'bottom', 6968: 'bottom', // r8c0-3: table top
-  6969: 'none', 6970: 'none',   // r8c4-5: top chairs backrest (body at row below)
-  6971: 'chair', 6972: 'chair', // r8c6-7: bottom chairs (single tile, facing up) — SOLID
-  6973: 'none', 6974: 'none',   // r8c8-9: right chairs backrest (body at row below)
+  6969: 'none', 6970: 'none', 6971: 'none', 6972: 'none', // conference chairs — no collision
+  6973: 'none', 6974: 'none', // conference chairs — no collision
   6975: 'bottom', 6976: 'bottom', 6977: 'bottom', 6978: 'bottom', // r9c0-3: table bottom
-  6979: 'chair', 6980: 'chair', // r9c4-5: top chairs seat — SOLID
-  6983: 'chair', 6984: 'chair', // r9c8-9: right chairs seat — SOLID
-  6989: 'none', 6990: 'none',   // r10c4-5: left chairs backrest (body at row below)
-  6999: 'chair', 7000: 'chair', // r11c4-5: left chairs seat — SOLID
+  6979: 'none', 6980: 'none', // conference chairs — no collision
+  6983: 'none', 6984: 'none', // conference chairs — no collision
+  6989: 'none', 6990: 'none', // conference chairs — no collision
+  6999: 'none', 7000: 'none', // conference chairs — no collision
 
   // ── Main Office ──
   7005: 'none', 7006: 'none', 7007: 'none', 7008: 'none', // r12: desk surface (monitors)
@@ -287,12 +286,23 @@ export class HQScene extends Phaser.Scene {
           6925, 6926, 6928, 6929, // couch middles
           6935, 6936, 6938,       // couch bases
         ]);
+        // Multi-tile objects: top tile uses bottom tile's depth so Rex doesn't
+        // render between the halves ("phasing through"). Map: GID → depth row offset.
+        // Value = how many rows below this tile the bottom of the object is.
+        const DEPTH_ROW_BOOST: Record<number, number> = {
+          // Left conference chairs: backrest at row 4, seat at row 5 → top uses +1
+          6989: 1, 6990: 1,
+          // Right conference chairs: backrest at row 4, seat at row 5 → top uses +1
+          6973: 1, 6974: 1,
+        };
+        const depthRowOffset = DEPTH_ROW_BOOST[gid] ?? 0;
+        const depthRow = row + depthRowOffset;
         // Depth = bottom edge of this tile (row+1)*T, offset by 10 to stay above floor layers
         // Palm/furniture on glass rows (7-8, 15-16) get boosted depth so they
         // always render above the glass layer even when it's dynamically raised
         const isGlassRow = (row >= 7 && row <= 8) || (row >= 15 && row <= 16);
         const belowPlayer = BELOW_PLAYER_GIDS.has(gid);
-        sprite.setDepth(belowPlayer ? 4 : isGlassRow ? 9000 + (row + 1) * T : 10 + (row + 1) * T);
+        sprite.setDepth(belowPlayer ? 4 : isGlassRow ? 9000 + (depthRow + 1) * T : 10 + (depthRow + 1) * T);
         this.furnitureSprites.push(sprite);
 
         // Per-GID collision shape — use explicit world positions
