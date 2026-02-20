@@ -85,7 +85,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   7078: 'none', 7079: 'none', 7080: 'none',
   7081: 'none', 7082: 'none', 7083: 'none',
   7085: 'none', 7086: 'none', 7087: 'none', // r20: palm pot/base — removed per Seth
-  7088: 'bottom', 7089: 'bottom', 7090: 'bottom',
+  7088: 'none', 7089: 'none', 7090: 'none', // removed per Seth
 
   // ── Kitchen ──
   7095: 'bottom', // r21c0: counter bottom
