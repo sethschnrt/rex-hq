@@ -502,31 +502,23 @@ export class HQScene extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.wallLayer);
     this.physics.add.collider(this.player, this.walls3dLayer);
-    // Glass is one-way: blocks from below (south), pass-through from above (north)
-    // Glass walls at rows 7-8 (top Y=224) and rows 15-16 (top Y=480)
-    // Use Rex's sprite Y (visual center) to determine side — NOT body.y
-    // Body.y is offset 48px down from sprite top, so it reaches the glass section
-    // at the same Y the sprite is still visually above the glass
-    const GLASS_SECTIONS = [7 * T, 15 * T]; // top Y of each glass wall section
+    // Glass is one-way: Rex can walk INTO the glass from the north (appears behind it)
+    // but cannot walk THROUGH it — stops at the bottom edge.
+    // From the south, blocked at the top edge.
+    //
+    // Glass sections: rows 7-8 (Y 224-288) and rows 15-16 (Y 480-544)
+    // Strategy: only collide with the BOTTOM ROW of each section (row 8, row 16)
+    // and only when Rex's feet are near that bottom edge.
+    // The TOP ROW tiles (row 7, row 15) never collide — Rex walks freely into them.
+    const GLASS_BOTTOM_ROWS = new Set([8, 16]); // bottom row of each glass section
     this.physics.add.collider(this.player, this.glassLayer, undefined, (_player, _tile) => {
-      const p = _player as Phaser.Physics.Arcade.Sprite;
       const t = _tile as Phaser.Tilemaps.Tile;
-      const tileTopY = t.y * T;
-      // Find which glass section this tile belongs to
-      let sectionTopY = tileTopY;
-      for (const st of GLASS_SECTIONS) {
-        if (tileTopY >= st && tileTopY < st + 2 * T) {
-          sectionTopY = st;
-          break;
-        }
+      // Top row of glass sections: NEVER collide (Rex walks into these from north)
+      if (!GLASS_BOTTOM_ROWS.has(t.y)) {
+        return false;
       }
-      // Use sprite center Y — this is where Rex visually "is"
-      // Sprite is 32x64, origin 0.5 → sprite top = p.y - 32
-      // Rex is visually "north" of the glass if his sprite top is above the section
-      const spriteTopY = p.y - 32;
-      // Only block if Rex's sprite top is at or below the glass section top
-      // (meaning he's approaching from the south / main office side)
-      return spriteTopY >= sectionTopY;
+      // Bottom row: ALWAYS collide (prevents walking through from either direction)
+      return true;
     });
     this.physics.add.collider(this.player, this.furnitureColliders);
 
