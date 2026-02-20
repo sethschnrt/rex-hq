@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 
+// Status endpoint — set via VITE_STATUS_URL env var, falls back to local file
+const REX_STATUS_URL = import.meta.env.VITE_STATUS_URL || 'rex-status.json';
+
 const T = 32;
 const MAP_W = 20;
 const MAP_H = 22;
@@ -824,7 +827,9 @@ export class HQScene extends Phaser.Scene {
   // ── Status polling ──
   private async pollStatus() {
     try {
-      const res = await fetch('https://jsonblob.com/api/jsonBlob/019c7ca8-2374-76ce-997a-bca381102a49');
+      const res = await fetch(REX_STATUS_URL + (REX_STATUS_URL.startsWith('http') ? '' : '?t=' + Date.now()), {
+        headers: { 'ngrok-skip-browser-warning': '1' },
+      });
       if (res.ok) {
         const data = await res.json();
         const newStatus = (data.status || 'idle') as RexStatus;
