@@ -20,32 +20,99 @@ const THEME_BASE = 'assets/tilesets/limezu/1_Interiors/32x32/Theme_Sorter_32x32'
  * This prevents Rex's tall sprite (feet 1.5 tiles below center) from
  * getting caught on surfaces when walking in adjacent corridors.
  */
-const NO_COLLIDE_GIDS = new Set([
-  // Rex's office desk — top surface row (monitors sit here, body row below collides)
-  6885,6886,6887,6888, // Singles row 0 cols 0-3: desk surface
-  // Paintings/art on wall
-  6889,6890, // Row 0 cols 4-5: painting top
-  6899,6900, // Row 1 cols 4-5: painting bottom
-  // Main office desk TOP surface (monitors row) — body row below collides
-  7005,7006,7007,7008, // Singles row 12: desk surface tiles
-  // Wall-mounted monitor (glass wall rows)
-  7035,7036,7037,7038,7039,7040,7041,7042,7043,7044,
-  7045,7046,7047,7048,7049,7050,7051,7052,7053,7054,
-]);
+/* ── Per-GID collision shapes ──
+ * 'none'    = no collision (wall-mounted, top of multi-tile, surface only)
+ * 'full'    = full 32x32 tile
+ * 'bottom'  = 32x16 bottom half of tile (standard for base of tall objects)
+ * 'chair'   = 16x16 centered (small seat)
+ * Default (not listed) = 'full'
+ */
+type CollisionShape = 'none' | 'full' | 'bottom' | 'chair';
 
-/* Chairs get a small centered collision body (16x16) instead of full 32x32 */
-const CHAIR_GIDS = new Set([
-  // Rex's office chair
-  6891,6892, // Row 0 cols 6-7: chair top
-  6901,6902, // Row 1 cols 6-7: chair bottom
-  // Conference chairs — all directions
-  6969,6970,6971,6972,6973,6974, // Row 8: top/bottom chair tiles
-  6979,6980,6983,6984, // Row 9: side chair bottoms
-  6989,6990, // Row 10: left side chair top
-  6999,7000, // Row 11: left side chair bottom
-  // Main office chairs
-  7025,7026,7027,7028, // Row 14: office chairs
-]);
+const COLLISION_SHAPES: Record<number, CollisionShape> = {
+  // ── Rex's Office ──
+  6885: 'none', 6886: 'none', 6887: 'none', 6888: 'none', // r0: desk surface (monitors)
+  6889: 'none', 6890: 'none',   // r0: painting top
+  6891: 'chair', 6892: 'chair', // r0: chair top
+  6895: 'bottom', 6896: 'bottom', 6897: 'bottom', 6898: 'bottom', // r1: desk body mid
+  6899: 'none', 6900: 'none',   // r1: painting bottom
+  6901: 'chair', 6902: 'chair', // r1: chair bottom
+  6905: 'bottom', 6906: 'bottom', 6907: 'bottom', 6908: 'bottom', // r2: desk body base
+  6920: 'none',  // r3c5: plant top (pot at row below)
+  6930: 'bottom', // r4c5: plant pot
+
+  // ── Lounge ──
+  6915: 'none', 6916: 'none',   // r3c0-1: couch top (body below)
+  6918: 'none', 6919: 'none',   // r3c3-4: couch top (body below)
+  6921: 'full', 6922: 'full', 6923: 'full', // r3c6-8: TV unit top shelf
+  6924: 'none',  // r3c9: cactus top (pot below)
+  6925: 'full', 6926: 'full',   // r4c0-1: couch middle
+  6928: 'full', 6929: 'full',   // r4c3-4: couch middle
+  6931: 'full', 6932: 'full', 6933: 'full', // r4c6-8: TV unit mid
+  6934: 'bottom', // r4c9: cactus pot
+  6935: 'bottom', 6936: 'bottom', // r5c0-1: couch base
+  6938: 'bottom', 6939: 'bottom', // r5c3-4: couch base
+  6941: 'full', 6942: 'full', 6943: 'full', // r5c6-8: TV unit bottom
+  6951: 'bottom', 6952: 'bottom', 6953: 'bottom', // r6c6-8: TV unit base
+
+  // ── Conference ──
+  6965: 'bottom', 6966: 'bottom', 6967: 'bottom', 6968: 'bottom', // r8c0-3: table top
+  6969: 'chair', 6970: 'chair', 6971: 'chair', 6972: 'chair', // r8c4-7: chairs
+  6973: 'chair', 6974: 'chair', // r8c8-9: chairs
+  6975: 'bottom', 6976: 'bottom', 6977: 'bottom', 6978: 'bottom', // r9c0-3: table bottom
+  6979: 'chair', 6980: 'chair', // r9c4-5: chairs
+  6983: 'chair', 6984: 'chair', // r9c8-9: chairs
+  6989: 'chair', 6990: 'chair', // r10c4-5: side chairs
+  6999: 'chair', 7000: 'chair', // r11c4-5: side chairs
+
+  // ── Main Office ──
+  7005: 'none', 7006: 'none', 7007: 'none', 7008: 'none', // r12: desk surface (monitors)
+  7015: 'full', 7016: 'full',   // r13c0-1: desk body (upper pair)
+  7017: 'full', 7018: 'full',   // r13c2-3: desk body (lower pair)
+  7025: 'chair', 7026: 'chair', 7027: 'chair', 7028: 'chair', // r14: office chairs
+  7035: 'none', 7036: 'none', 7037: 'none', 7038: 'none', // wall monitors
+  7039: 'none', 7040: 'none', 7041: 'none', 7042: 'none',
+  7043: 'none', 7044: 'none', 7045: 'none', 7046: 'none',
+  7047: 'none', 7048: 'none', 7049: 'none', 7050: 'none',
+  7051: 'none', 7052: 'none', 7053: 'none', 7054: 'none',
+  // Palms (3 tiles tall each)
+  7065: 'none', 7066: 'none', 7067: 'none', // r18: palm top
+  7068: 'none', 7069: 'none', 7070: 'none',
+  7071: 'none', 7072: 'none', 7073: 'none',
+  7075: 'none', 7076: 'none', 7077: 'none', // r19: palm middle
+  7078: 'none', 7079: 'none', 7080: 'none',
+  7081: 'none', 7082: 'none', 7083: 'none',
+  7085: 'bottom', 7086: 'bottom', 7087: 'bottom', // r20: palm pot/base
+  7088: 'bottom', 7089: 'bottom', 7090: 'bottom',
+
+  // ── Kitchen ──
+  7095: 'bottom', // r21c0: counter bottom
+  7102: 'none',   // r21c7: fridge top
+  7104: 'none',   // r21c9: display fridge top
+  7105: 'bottom', // r22c0: counter base
+  7112: 'full',   // r22c7: fridge middle
+  7113: 'full',   // r22c8: display fridge middle
+  7115: 'full',   // r23c0: counter middle
+  7122: 'bottom', // r23c7: fridge bottom
+  7123: 'bottom', // r23c8: display fridge bottom
+  7133: 'bottom', // r24c8: display fridge base
+  7139: 'full',   // r25c4: counter top row (has cabinet face)
+  7141: 'full',   // r25c6: counter top
+  7142: 'full',   // r25c7: counter top
+  7143: 'none',   // r25c8: counter top surface
+  7149: 'full',   // r26c4: counter middle
+  7151: 'full',   // r26c6: counter middle
+  7152: 'full',   // r26c7: counter middle
+  7159: 'bottom', // r27c4: counter base
+  7160: 'bottom', // r27c5: counter base
+  7161: 'bottom', // r27c6: counter base
+  7165: 'none',   // r28c0: kitchen table top
+  7166: 'none',   // r28c1: kitchen table top
+  7175: 'full',   // r29c0: kitchen table middle
+  7176: 'full',   // r29c1: kitchen table middle
+  7185: 'bottom', // r30c0: kitchen table base
+  7186: 'bottom', // r30c1: kitchen table base
+};
 
 /* ── Glass door animation config ── */
 const DOOR_OPEN_DIST = T;           // how far each panel slides (1 tile)
@@ -214,13 +281,17 @@ export class HQScene extends Phaser.Scene {
         sprite.setDepth(10 + (row + 1) * T);
         this.furnitureSprites.push(sprite);
 
-        // Collision bodies: full tile for most furniture, small centered for chairs, none for wall-mounted
-        if (!NO_COLLIDE_GIDS.has(gid)) {
+        // Per-GID collision shape
+        const shape = COLLISION_SHAPES[gid] ?? 'full';
+        if (shape !== 'none') {
           const body = this.furnitureColliders.create(wx, wy) as Phaser.Physics.Arcade.Sprite;
           body.setVisible(false);
-          if (CHAIR_GIDS.has(gid)) {
+          if (shape === 'chair') {
             body.body!.setSize(16, 16);
             body.body!.setOffset(8, 8);
+          } else if (shape === 'bottom') {
+            body.body!.setSize(T, 16);
+            body.body!.setOffset(0, 16);
           } else {
             body.body!.setSize(T, T);
           }
