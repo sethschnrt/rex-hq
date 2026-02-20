@@ -119,7 +119,7 @@ COLLISION_SHAPES = {
     6899:'none',6900:'none',6901:'chair',6902:'chair',6905:'none',6906:'none',
     6907:'none',6908:'none',6591:'none',6592:'none',6920:'none',6930:'bottom',
     6915:'none',6916:'none',6918:'none',6919:'none',6921:'full',6922:'full',6923:'full',
-    6924:'none',6925:'full',6926:'full',6928:'full',6929:'full',6931:'full',6932:'full',
+    6924:'none',6925:'none',6926:'full',6928:'full',6929:'full',6931:'full',6932:'full',
     6933:'full',6934:'bottom',6935:'bottom',6936:'bottom',6938:'bottom',6939:'bottom',
     6941:'full',6942:'full',6943:'full',6951:'bottom',6952:'bottom',6953:'bottom',
     6965:'bottom',6966:'bottom',6967:'bottom',6968:'bottom',6969:'chair',6970:'chair',
@@ -233,6 +233,11 @@ for r in range(MAP_H):
         elif shape == 'chair':
             draw_border(r, c, BORDER['chair'], 'chair', tile_num)
             tile_num += 1
+
+# Position-specific collision overrides (visual at one spot, collision at another)
+# GID 6925 collision moved from (19,13) to (18,14)
+draw_border(18, 14, BORDER['full'], 'full', tile_num)
+tile_num += 1
 
 # Legend at bottom
 ly = H - 30

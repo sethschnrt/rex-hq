@@ -48,7 +48,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   6918: 'none', 6919: 'none',   // r3c3-4: couch top (body below)
   6921: 'full', 6922: 'full', 6923: 'full', // r3c6-8: TV unit top shelf
   6924: 'none',  // r3c9: cactus top (pot below)
-  6925: 'full', 6926: 'full',   // r4c0-1: couch middle
+  6925: 'none', 6926: 'full',   // r4c0-1: couch middle (6925 collision moved above 6926)
   6928: 'full', 6929: 'full',   // r4c3-4: couch middle
   6931: 'full', 6932: 'full', 6933: 'full', // r4c6-8: TV unit mid
   6934: 'bottom', // r4c9: cactus pot
@@ -309,6 +309,16 @@ export class HQScene extends Phaser.Scene {
           this.furnitureColliders.add(zone);
         }
       }
+    }
+
+    // ── Position-specific collision overrides ──
+    // GID 6925 visual at (19,13) but collision belongs at (18,14) — directly above 6926
+    {
+      const bx = 14 * T, by = 18 * T, bw = T, bh = T;
+      const zone = this.add.zone(bx + bw / 2, by + bh / 2, bw, bh);
+      this.physics.add.existing(zone, true);
+      (zone.body as Phaser.Physics.Arcade.StaticBody).setSize(bw, bh);
+      this.furnitureColliders.add(zone);
     }
 
     // ── Glass Doors ──
