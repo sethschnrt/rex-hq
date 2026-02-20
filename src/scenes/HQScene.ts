@@ -849,7 +849,7 @@ export class HQScene extends Phaser.Scene {
     if (moving) {
       this.player.anims.play('walk-' + this.lastDir, true);
     } else {
-      const dir = this.autoArrived ? 'up' : this.lastDir;
+      const dir = this.lastDir;
       this.player.anims.play('idle-' + dir, true);
     }
 
