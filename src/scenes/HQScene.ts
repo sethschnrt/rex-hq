@@ -46,7 +46,7 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
   // ── Lounge ──
   6915: 'none', 6916: 'none',   // r3c0-1: couch top (body below)
   6918: 'none', 6919: 'none',   // r3c3-4: couch top (body below)
-  6921: 'none', 6922: 'none', 6923: 'none', // r3c6-8: TV unit top shelf — removed per Seth
+  6921: 'bottom', 6922: 'bottom', 6923: 'bottom', // r3c6-8: TV unit top shelf
   6924: 'none',  // r3c9: cactus top (pot below)
   6925: 'none', 6926: 'full',   // r4c0-1: couch middle (6925 collision moved above 6926)
   6928: 'full', 6929: 'full',   // r4c3-4: couch middle
