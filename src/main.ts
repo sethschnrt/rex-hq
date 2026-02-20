@@ -1,8 +1,6 @@
 import Phaser from 'phaser';
 import { HQScene } from './scenes/HQScene';
 
-// Map is 20x22 tiles at 32px = 640x704
-// Render at native resolution, CSS scales to 100vw
 const MAP_W = 640;
 const MAP_H = 704;
 
@@ -38,18 +36,17 @@ function startGame() {
   }
 }
 
-// Wait for auth before starting game
+// Poll for auth — simple and reliable
 function waitForAuth() {
   if ((window as any).__REX_AUTH) {
     startGame();
   } else {
-    const observer = new MutationObserver(() => {
+    const check = setInterval(() => {
       if ((window as any).__REX_AUTH) {
-        observer.disconnect();
+        clearInterval(check);
         startGame();
       }
-    });
-    observer.observe(document.getElementById('auth-gate')!, { attributes: true, attributeFilter: ['style'] });
+    }, 100);
   }
 }
 
