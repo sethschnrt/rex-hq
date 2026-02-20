@@ -144,10 +144,63 @@ interface GlassDoor {
 type RexStatus = 'working' | 'typing' | 'idle';
 
 const DESK_POS   = { x: 4.5 * T + T / 2, y: 5 * T + T / 2 };
-const COUCH_POS  = { x: 13 * T + T / 2, y: 19 * T + T / 2 }; // lounge couch, facing up at TV
+const COUCH_POS  = { x: 13 * T + T / 2, y: 19 * T + T / 2 };
 const STATUS_POLL_MS = 5000;
-const ARRIVE_THRESHOLD = 4;
+const ARRIVE_THRESHOLD = 6;
 const AUTO_SPEED = SPEED;
+
+// Door centers (2x2 doors, center = top-left + 1 tile)
+const DOOR_LEFT_TOP    = { x: 4 * T, y: 8.5 * T }; // left door row 7-8
+const DOOR_LEFT_BOT    = { x: 4 * T, y: 16.5 * T }; // left door row 15-16
+const DOOR_RIGHT_TOP   = { x: 14 * T, y: 8.5 * T }; // right door row 7-8
+const DOOR_RIGHT_BOT   = { x: 14 * T, y: 16.5 * T }; // right door row 15-16
+
+// Mid-room waypoints for crossing the main office area (rows 7-15)
+const MID_LEFT  = { x: 4 * T, y: 12 * T };
+const MID_RIGHT = { x: 14 * T, y: 12 * T };
+
+type Pt = { x: number; y: number };
+
+// Waypoint routes between zones
+// Zone: top-left office (rows 0-7), top-right (rows 0-7 cols 10+),
+//        main office (rows 8-15), bottom-left kitchen (rows 16+), bottom-right lounge (rows 16+)
+function buildRoute(from: Pt, to: Pt): Pt[] {
+  const fromRow = Math.floor(from.y / T);
+  const toRow = Math.floor(to.y / T);
+  const fromCol = Math.floor(from.x / T);
+  const toCol = Math.floor(to.x / T);
+
+  // Same zone — direct
+  const fromZone = fromRow < 8 ? 'top' : fromRow < 16 ? 'mid' : 'bot';
+  const toZone = toRow < 8 ? 'top' : toRow < 16 ? 'mid' : 'bot';
+  const fromSide = fromCol < 10 ? 'L' : 'R';
+  const toSide = toCol < 10 ? 'L' : 'R';
+
+  if (fromZone === toZone && fromSide === toSide) return [to];
+
+  const waypoints: Pt[] = [];
+
+  // From top zone → need to go through top doors
+  if (fromZone === 'top') {
+    waypoints.push(fromSide === 'L' ? DOOR_LEFT_TOP : DOOR_RIGHT_TOP);
+  }
+  // From bottom zone → need to go through bottom doors
+  if (fromZone === 'bot') {
+    waypoints.push(fromSide === 'L' ? DOOR_LEFT_BOT : DOOR_RIGHT_BOT);
+  }
+
+  // Now in mid zone — cross to correct side if needed
+  if (toZone === 'top') {
+    waypoints.push(toSide === 'L' ? DOOR_LEFT_TOP : DOOR_RIGHT_TOP);
+  } else if (toZone === 'bot') {
+    waypoints.push(toSide === 'L' ? DOOR_LEFT_BOT : DOOR_RIGHT_BOT);
+  } else {
+    // staying in mid
+  }
+
+  waypoints.push(to);
+  return waypoints;
+}
 
 export class HQScene extends Phaser.Scene {
   public player!: Phaser.Physics.Arcade.Sprite;
@@ -164,7 +217,7 @@ export class HQScene extends Phaser.Scene {
   // ── Autonomous behavior ──
   private rexStatus: RexStatus = 'idle';
   private statusBubble!: Phaser.GameObjects.Sprite;
-  private autoTarget: { x: number; y: number } | null = null;
+  private waypoints: Pt[] = [];
   private autoArrived = false;
   private lastManualInput = 0;
 
@@ -567,7 +620,10 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setVisible(false);
 
     // ── Start status polling + auto-walk to position ──
-    this.autoTarget = { ...COUCH_POS };
+    this.waypoints = buildRoute(
+      { x: this.player.x, y: this.player.y },
+      COUCH_POS
+    );
     this.pollStatus();
 
     // ── Input: WASD only (arrow keys conflict with browser scroll) ──
@@ -689,14 +745,15 @@ export class HQScene extends Phaser.Scene {
         const newStatus = (data.status || 'idle') as RexStatus;
         if (newStatus !== this.rexStatus) {
           this.rexStatus = newStatus;
-          // Update target position
-          if (newStatus === 'idle') {
-            this.autoTarget = { ...COUCH_POS };
-          } else {
-            this.autoTarget = { ...DESK_POS };
+          const dest = newStatus === 'idle' ? COUCH_POS : DESK_POS;
+          this.waypoints = buildRoute(
+            { x: this.player.x, y: this.player.y },
+            dest
+          );
+          this.autoArrived = false;
+          if (newStatus !== 'idle') {
             this.statusBubble.play('emote-' + newStatus);
           }
-          this.autoArrived = false;
         }
       }
     } catch { /* ignore fetch errors */ }
@@ -727,17 +784,23 @@ export class HQScene extends Phaser.Scene {
       if (mx !== 0 && my === 0) this.lastDir = mx < 0 ? 'left' : 'right';
       else if (my !== 0 && mx === 0) this.lastDir = my < 0 ? 'up' : 'down';
       else if (mx !== 0) this.lastDir = mx < 0 ? 'left' : 'right';
-      // Reset auto so Rex walks back to desk after manual control ends
+      // Rebuild route when manual control ends
       this.autoArrived = false;
-    } else if (this.autoTarget && !this.autoArrived) {
-      // ── Auto-walk to desk ──
-      const dx = this.autoTarget.x - this.player.x;
-      const dy = this.autoTarget.y - this.player.y;
+      const dest = this.rexStatus === 'idle' ? COUCH_POS : DESK_POS;
+      this.waypoints = buildRoute({ x: this.player.x, y: this.player.y }, dest);
+    } else if (this.waypoints.length > 0 && !this.autoArrived) {
+      // ── Auto-walk along waypoints ──
+      const wp = this.waypoints[0];
+      const dx = wp.x - this.player.x;
+      const dy = wp.y - this.player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist < ARRIVE_THRESHOLD) {
-        this.autoArrived = true;
-        this.lastDir = this.rexStatus === 'idle' ? 'up' : 'up'; // face TV or desk
+        this.waypoints.shift();
+        if (this.waypoints.length === 0) {
+          this.autoArrived = true;
+          this.lastDir = 'up'; // face desk or TV
+        }
       } else {
         vx = (dx / dist) * AUTO_SPEED;
         vy = (dy / dist) * AUTO_SPEED;
@@ -749,7 +812,6 @@ export class HQScene extends Phaser.Scene {
         }
       }
     }
-    // When autoArrived and no manual input: Rex sits at desk idle-up
 
     this.player.setVelocity(vx, vy);
     this.player.setDepth(10 + this.player.y + 30);
