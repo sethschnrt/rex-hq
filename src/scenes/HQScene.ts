@@ -59,13 +59,14 @@ const COLLISION_SHAPES: Record<number, CollisionShape> = {
 
   // ── Conference ──
   6965: 'bottom', 6966: 'bottom', 6967: 'bottom', 6968: 'bottom', // r8c0-3: table top
-  6969: 'none', 6970: 'none', 6971: 'none', 6972: 'none', // conference chairs — removed per Seth
-  6973: 'none', 6974: 'none', // conference chairs — removed per Seth
+  6969: 'none', 6970: 'none',   // r8c4-5: top chairs backrest (body at row below)
+  6971: 'chair', 6972: 'chair', // r8c6-7: bottom chairs (single tile, facing up) — SOLID
+  6973: 'none', 6974: 'none',   // r8c8-9: right chairs backrest (body at row below)
   6975: 'bottom', 6976: 'bottom', 6977: 'bottom', 6978: 'bottom', // r9c0-3: table bottom
-  6979: 'none', 6980: 'none', // conference chairs — removed per Seth
-  6983: 'none', 6984: 'none', // conference chairs — removed per Seth
-  6989: 'none', 6990: 'none', // conference chairs — removed per Seth
-  6999: 'none', 7000: 'none', // conference chairs — removed per Seth
+  6979: 'chair', 6980: 'chair', // r9c4-5: top chairs seat — SOLID
+  6983: 'chair', 6984: 'chair', // r9c8-9: right chairs seat — SOLID
+  6989: 'none', 6990: 'none',   // r10c4-5: left chairs backrest (body at row below)
+  6999: 'chair', 7000: 'chair', // r11c4-5: left chairs seat — SOLID
 
   // ── Main Office ──
   7005: 'none', 7006: 'none', 7007: 'none', 7008: 'none', // r12: desk surface (monitors)
