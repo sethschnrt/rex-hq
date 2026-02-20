@@ -952,7 +952,7 @@ export class HQScene extends Phaser.Scene {
     this.statusBubble.setPosition(this.player.x, this.player.y - 20);
     this.statusBubble.setDepth(this.player.depth + 1);
     // Show bubble only when at desk working/typing
-    this.statusBubble.setVisible(this.autoArrived && !manualInput && this.rexStatus !== 'idle' && this.currentActivity === 'desk');
+    this.statusBubble.setVisible(!manualInput && this.rexStatus !== 'idle');
 
     // Glass z-index
     const feetY = this.player.y + 30;
