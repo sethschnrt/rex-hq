@@ -343,8 +343,11 @@ export class HQScene extends Phaser.Scene {
         dt.refresh();
 
         const glSprite = this.add.sprite(wx, wy, tileKey);
-        // Depth based on bottom edge of tile row, same formula as furniture
-        glSprite.setDepth(10 + (row + 1) * T);
+        // Glass depth: use bottom of the glass SECTION (not individual row)
+        // so the entire glass wall renders on top of Rex when he's behind it.
+        // Sections: rows 7-8 → bottom at row 9, rows 15-16 → bottom at row 17
+        const sectionBottom = (row <= 8) ? 9 : 17;
+        glSprite.setDepth(10 + sectionBottom * T);
       }
     }
     // Hide the tilemap glass layer visually (collision still works from the layer)
