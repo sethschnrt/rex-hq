@@ -864,14 +864,15 @@ export class HQScene extends Phaser.Scene {
           this.lastDir = 'up'; // face desk or TV
         }
       } else {
-        vx = (dx / dist) * AUTO_SPEED;
-        vy = (dy / dist) * AUTO_SPEED;
-        moving = true;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          this.lastDir = dx < 0 ? 'left' : 'right';
+        // Move one axis at a time — no diagonal (RPG style)
+        if (Math.abs(dx) > ARRIVE_THRESHOLD) {
+          vx = dx > 0 ? AUTO_SPEED : -AUTO_SPEED;
+          this.lastDir = dx > 0 ? 'right' : 'left';
         } else {
-          this.lastDir = dy < 0 ? 'up' : 'down';
+          vy = dy > 0 ? AUTO_SPEED : -AUTO_SPEED;
+          this.lastDir = dy > 0 ? 'down' : 'up';
         }
+        moving = true;
       }
     }
 
