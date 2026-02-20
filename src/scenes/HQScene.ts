@@ -643,6 +643,13 @@ export class HQScene extends Phaser.Scene {
       this.player.anims.play('idle-' + this.lastDir, true);
     }
 
+    // Glass z-index: when Rex is inside a glass section, glass renders on top of him.
+    // Glass sections: rows 7-8 (Y 224-288), rows 15-16 (Y 480-544)
+    // Rex's feet Y = player.y + 30. Check if feet are inside a glass section.
+    const feetY = this.player.y + 30;
+    const inGlass = (feetY >= 7 * T && feetY < 9 * T) || (feetY >= 15 * T && feetY < 17 * T);
+    this.glassLayer.setDepth(inGlass ? this.player.depth + 1 : 3);
+
     this.updateDoors(delta);
   }
 
