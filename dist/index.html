@@ -85,18 +85,16 @@
     /* ── Game Area ── */
     #game-area {
       flex: 1; min-height: 0; position: relative; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
       background: #2a2a3a;
     }
     #game-container {
       width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
     }
     #game-container canvas {
       display: block;
       width: 100% !important;
-      height: auto !important;
-      max-height: 100%;
+      height: 100% !important;
+      object-fit: contain;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
@@ -190,7 +188,7 @@
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/rex-hq/assets/index-DxJsoxCB.js"></script>
+  <script type="module" crossorigin src="/rex-hq/assets/index-DwTsn0KA.js"></script>
 </head>
 <body>
   <!-- Auth Gate -->
