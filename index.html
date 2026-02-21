@@ -42,27 +42,27 @@
     #top-bar {
       position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 500;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 10px; background: #2c2416;
+      padding: 0 10px; background: #0a1628;
       font-family: 'Press Start 2P', monospace;
-      border-bottom: 3px solid #d4a43e;
+      border-bottom: 2px solid #1a3a5c;
     }
-    #top-bar .title { font-size: 0.5rem; color: #d4a43e; letter-spacing: 3px; }
+    #top-bar .title { font-size: 0.5rem; color: #4ecdc4; letter-spacing: 3px; }
     #top-bar .right { display: flex; align-items: center; gap: 8px; }
     .bar-btn {
-      background: #3d3020; border: 2px solid #d4a43e; color: #d4a43e;
+      background: #122240; border: 2px solid #1a3a5c; color: #4ecdc4;
       font-size: 0.75rem; font-family: 'Press Start 2P', monospace;
       cursor: pointer; padding: 6px 10px;
       position: relative;
       min-width: 36px; min-height: 36px;
       display: flex; align-items: center; justify-content: center;
     }
-    .bar-btn:active { background: #d4a43e; color: #2c2416; }
+    .bar-btn:active { background: #4ecdc4; color: #0a1628; }
     .bar-btn .badge {
       position: absolute; top: -5px; right: -5px;
-      background: #c0553a; color: #fff; font-size: 0.3rem;
+      background: #e74c3c; color: #fff; font-size: 0.3rem;
       min-width: 14px; height: 14px; border-radius: 7px;
       display: flex; align-items: center; justify-content: center;
-      padding: 0 3px; border: 2px solid #2c2416;
+      padding: 0 3px; border: 2px solid #0a1628;
     }
 
     /* ── Chat Bar (fixed bottom) ── */
@@ -70,23 +70,23 @@
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
       display: flex; align-items: center; gap: 8px;
       padding: 8px 10px;
-      background: #2c2416; border-top: 3px solid #d4a43e;
+      background: #0a1628; border-top: 2px solid #1a3a5c;
       font-family: 'Press Start 2P', monospace;
     }
     #chat-input {
       flex: 1; height: 34px; padding: 0 10px;
       font-size: 16px; font-family: 'Press Start 2P', monospace;
-      background: #3d3020; border: 2px solid #6b5a3e; color: #f0e0c0; outline: none;
+      background: #122240; border: 2px solid #1a3a5c; color: #c0e8e4; outline: none;
     }
-    #chat-input:focus { border-color: #d4a43e; }
-    #chat-input::placeholder { color: #6b5a3e; font-size: 0.4rem; }
+    #chat-input:focus { border-color: #4ecdc4; }
+    #chat-input::placeholder { color: #2a5a6a; font-size: 0.4rem; }
     #chat-send {
       height: 34px; padding: 0 12px;
       font-size: 0.5rem; font-family: 'Press Start 2P', monospace;
-      background: #d4a43e; color: #2c2416; border: 2px solid #d4a43e; cursor: pointer;
+      background: #4ecdc4; color: #0a1628; border: 2px solid #4ecdc4; cursor: pointer;
       font-weight: bold;
     }
-    #chat-send:active { background: #b8882e; }
+    #chat-send:active { background: #3ab5ad; }
 
     /* ── Chat Messages (over game) ── */
     #chat-messages {
@@ -101,41 +101,41 @@
       padding: 6px 10px; margin-bottom: 4px;
       font-size: 0.35rem; font-family: 'Press Start 2P', monospace; line-height: 1.6;
       max-width: 80%; pointer-events: auto;
-      background: #3d3020; border: 2px solid #6b5a3e; color: #f0e0c0;
+      background: #122240; border: 2px solid #1a3a5c; color: #c0e8e4;
     }
-    .chat-msg.user { align-self: flex-end; background: #4a3520; border-color: #d4a43e; }
+    .chat-msg.user { align-self: flex-end; background: #0d2e3d; border-color: #4ecdc4; }
     .chat-msg.rex { align-self: flex-start; }
-    .chat-msg .sender { font-size: 0.25rem; color: #d4a43e; margin-bottom: 2px; }
+    .chat-msg .sender { font-size: 0.25rem; color: #4ecdc4; margin-bottom: 2px; }
 
     /* ── Side Panel ── */
     #side-panel {
       position: fixed; top: 0; right: -260px; width: 260px; height: 100vh;
       z-index: 600; transition: right 0.15s ease;
       display: flex; flex-direction: column;
-      background: #2c2416; border-left: 3px solid #d4a43e;
+      background: #0a1628; border-left: 2px solid #1a3a5c;
       box-shadow: -4px 0 8px rgba(0,0,0,0.5);
       font-family: 'Press Start 2P', monospace;
     }
     #side-panel.open { right: 0; }
     #panel-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px; border-bottom: 2px solid #6b5a3e;
+      padding: 12px; border-bottom: 2px solid #1a3a5c;
     }
-    #panel-header .title { font-size: 0.5rem; color: #d4a43e; }
+    #panel-header .title { font-size: 0.5rem; color: #4ecdc4; }
     #panel-close {
-      background: #3d3020; border: 2px solid #d4a43e; color: #d4a43e;
+      background: #122240; border: 2px solid #1a3a5c; color: #4ecdc4;
       font-size: 0.6rem; font-family: 'Press Start 2P', monospace; cursor: pointer; padding: 4px 8px;
     }
-    #panel-tabs { display: flex; border-bottom: 2px solid #6b5a3e; }
+    #panel-tabs { display: flex; border-bottom: 2px solid #1a3a5c; }
     .panel-tab {
       flex: 1; padding: 10px 4px; text-align: center;
       font-size: 0.35rem; font-family: 'Press Start 2P', monospace;
-      color: #6b5a3e; background: #3d3020; border: none; cursor: pointer;
-      border-right: 1px solid #6b5a3e;
+      color: #2a5a6a; background: #122240; border: none; cursor: pointer;
+      border-right: 1px solid #1a3a5c;
     }
     .panel-tab:last-child { border-right: none; }
-    .panel-tab.active { color: #d4a43e; background: #2c2416; }
-    #panel-content { flex: 1; overflow-y: auto; padding: 12px; font-size: 0.35rem; color: #c0a878; line-height: 2; }
+    .panel-tab.active { color: #4ecdc4; background: #0a1628; }
+    #panel-content { flex: 1; overflow-y: auto; padding: 12px; font-size: 0.35rem; color: #7ab8b2; line-height: 2; }
     #panel-overlay { display: none; position: fixed; inset: 0; z-index: 550; background: rgba(0,0,0,0.4); }
     #panel-overlay.open { display: block; }
   </style>
