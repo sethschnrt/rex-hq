@@ -749,7 +749,7 @@ export class HQScene extends Phaser.Scene {
     this.time.delayedCall(STATUS_POLL_MS, () => this.pollStatus());
   }
 
-  update(time: number, _delta: number) {
+  update(time: number, delta: number) {
     let vx = 0;
     let vy = 0;
     let moving = false;
