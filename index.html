@@ -7,7 +7,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #1a1a2e; }
-    #game-container { width: 100%; padding-top: 36px; padding-bottom: 44px; }
+    #game-container { width: 100%; padding-top: 44px; padding-bottom: 50px; }
     canvas { display: block; width: 100% !important; height: auto !important; }
     .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 
@@ -40,57 +40,57 @@
 
     /* ── Top Bar (fixed) ── */
     #top-bar {
-      position: fixed; top: 0; left: 0; right: 0; height: 36px; z-index: 500;
+      position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 500;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 8px; background: #383838;
+      padding: 0 10px; background: #2c2416;
       font-family: 'Press Start 2P', monospace;
+      border-bottom: 3px solid #d4a43e;
     }
-    #top-bar .title { font-size: 0.45rem; color: #f8f8f0; letter-spacing: 2px; }
-    #top-bar .right { display: flex; align-items: center; gap: 4px; }
+    #top-bar .title { font-size: 0.5rem; color: #d4a43e; letter-spacing: 3px; }
+    #top-bar .right { display: flex; align-items: center; gap: 8px; }
     .bar-btn {
-      background: #f8f8f0; border: 2px solid #585858; color: #383838;
-      font-size: 0.5rem; font-family: 'Press Start 2P', monospace;
-      cursor: pointer; padding: 3px 6px;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
+      background: #3d3020; border: 2px solid #d4a43e; color: #d4a43e;
+      font-size: 0.75rem; font-family: 'Press Start 2P', monospace;
+      cursor: pointer; padding: 6px 10px;
       position: relative;
-    }
-    .bar-btn:active { box-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #a8a8a0; }
-    .bar-btn .badge {
-      position: absolute; top: -4px; right: -4px;
-      background: #d03030; color: #fff; font-size: 0.25rem;
-      min-width: 10px; height: 10px; border-radius: 5px;
+      min-width: 36px; min-height: 36px;
       display: flex; align-items: center; justify-content: center;
-      padding: 0 2px; border: 1px solid #383838;
+    }
+    .bar-btn:active { background: #d4a43e; color: #2c2416; }
+    .bar-btn .badge {
+      position: absolute; top: -5px; right: -5px;
+      background: #c0553a; color: #fff; font-size: 0.3rem;
+      min-width: 14px; height: 14px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; border: 2px solid #2c2416;
     }
 
     /* ── Chat Bar (fixed bottom) ── */
     #chat-bar {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 8px;
-      background: #f8f8f0; border-top: 3px solid #383838;
-      box-shadow: inset 0 2px 0 #fff;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      background: #2c2416; border-top: 3px solid #d4a43e;
       font-family: 'Press Start 2P', monospace;
     }
     #chat-input {
-      flex: 1; height: 28px; padding: 0 8px;
+      flex: 1; height: 34px; padding: 0 10px;
       font-size: 16px; font-family: 'Press Start 2P', monospace;
-      background: #e8e8d8; border: 2px solid #a8a898; color: #383838; outline: none;
-      box-shadow: inset 1px 1px 0 #c8c8b8;
+      background: #3d3020; border: 2px solid #6b5a3e; color: #f0e0c0; outline: none;
     }
-    #chat-input:focus { border-color: #5878a8; }
-    #chat-input::placeholder { color: #a8a898; font-size: 0.4rem; }
+    #chat-input:focus { border-color: #d4a43e; }
+    #chat-input::placeholder { color: #6b5a3e; font-size: 0.4rem; }
     #chat-send {
-      height: 28px; padding: 0 10px;
-      font-size: 0.4rem; font-family: 'Press Start 2P', monospace;
-      background: #f8f8f0; color: #383838; border: 2px solid #585858; cursor: pointer;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
+      height: 34px; padding: 0 12px;
+      font-size: 0.5rem; font-family: 'Press Start 2P', monospace;
+      background: #d4a43e; color: #2c2416; border: 2px solid #d4a43e; cursor: pointer;
+      font-weight: bold;
     }
-    #chat-send:active { box-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #a8a8a0; }
+    #chat-send:active { background: #b8882e; }
 
     /* ── Chat Messages (over game) ── */
     #chat-messages {
-      position: fixed; bottom: 44px; left: 0; right: 0;
+      position: fixed; bottom: 50px; left: 0; right: 0;
       max-height: 30vh; overflow-y: auto; padding: 6px 8px;
       pointer-events: none; z-index: 400;
       display: flex; flex-direction: column; justify-content: flex-end;
@@ -98,46 +98,44 @@
       -webkit-mask-image: linear-gradient(transparent 0%, black 40%);
     }
     .chat-msg {
-      padding: 4px 8px; margin-bottom: 3px;
-      font-size: 0.3rem; font-family: 'Press Start 2P', monospace; line-height: 1.6;
+      padding: 6px 10px; margin-bottom: 4px;
+      font-size: 0.35rem; font-family: 'Press Start 2P', monospace; line-height: 1.6;
       max-width: 80%; pointer-events: auto;
-      background: #f8f8f0; border: 2px solid #383838; color: #383838;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
+      background: #3d3020; border: 2px solid #6b5a3e; color: #f0e0c0;
     }
-    .chat-msg.user { align-self: flex-end; background: #d8e8f8; border-color: #5878a8; }
+    .chat-msg.user { align-self: flex-end; background: #4a3520; border-color: #d4a43e; }
     .chat-msg.rex { align-self: flex-start; }
-    .chat-msg .sender { font-size: 0.2rem; color: #888; margin-bottom: 2px; }
+    .chat-msg .sender { font-size: 0.25rem; color: #d4a43e; margin-bottom: 2px; }
 
     /* ── Side Panel ── */
     #side-panel {
       position: fixed; top: 0; right: -260px; width: 260px; height: 100vh;
       z-index: 600; transition: right 0.15s ease;
       display: flex; flex-direction: column;
-      background: #f8f8f0; border-left: 3px solid #383838;
-      box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+      background: #2c2416; border-left: 3px solid #d4a43e;
+      box-shadow: -4px 0 8px rgba(0,0,0,0.5);
       font-family: 'Press Start 2P', monospace;
     }
     #side-panel.open { right: 0; }
     #panel-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 10px; border-bottom: 2px solid #a8a898;
+      padding: 12px; border-bottom: 2px solid #6b5a3e;
     }
-    #panel-header .title { font-size: 0.45rem; color: #383838; }
+    #panel-header .title { font-size: 0.5rem; color: #d4a43e; }
     #panel-close {
-      background: #f8f8f0; border: 2px solid #585858; color: #383838;
-      font-size: 0.5rem; font-family: 'Press Start 2P', monospace; cursor: pointer; padding: 2px 6px;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c8c8b8;
+      background: #3d3020; border: 2px solid #d4a43e; color: #d4a43e;
+      font-size: 0.6rem; font-family: 'Press Start 2P', monospace; cursor: pointer; padding: 4px 8px;
     }
-    #panel-tabs { display: flex; border-bottom: 2px solid #a8a898; }
+    #panel-tabs { display: flex; border-bottom: 2px solid #6b5a3e; }
     .panel-tab {
-      flex: 1; padding: 8px 4px; text-align: center;
-      font-size: 0.3rem; font-family: 'Press Start 2P', monospace;
-      color: #787868; background: #e8e8d8; border: none; cursor: pointer;
-      border-right: 1px solid #a8a898;
+      flex: 1; padding: 10px 4px; text-align: center;
+      font-size: 0.35rem; font-family: 'Press Start 2P', monospace;
+      color: #6b5a3e; background: #3d3020; border: none; cursor: pointer;
+      border-right: 1px solid #6b5a3e;
     }
     .panel-tab:last-child { border-right: none; }
-    .panel-tab.active { color: #383838; background: #f8f8f0; }
-    #panel-content { flex: 1; overflow-y: auto; padding: 10px; font-size: 0.35rem; color: #585858; line-height: 2; }
+    .panel-tab.active { color: #d4a43e; background: #2c2416; }
+    #panel-content { flex: 1; overflow-y: auto; padding: 12px; font-size: 0.35rem; color: #c0a878; line-height: 2; }
     #panel-overlay { display: none; position: fixed; inset: 0; z-index: 550; background: rgba(0,0,0,0.4); }
     #panel-overlay.open { display: block; }
   </style>
