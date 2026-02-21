@@ -169,12 +169,24 @@
     .task-card {
       display: flex; align-items: center; gap: 6px;
       padding: 8px; margin-bottom: 4px;
-      background: #122240; border: 1px solid #1a3a5c;
+      background: #122240; border-left: 3px solid #1a3a5c; border-top: 1px solid #1a3a5c; border-right: 1px solid #1a3a5c; border-bottom: 1px solid #1a3a5c;
       cursor: pointer; user-select: none; -webkit-user-select: none;
     }
     .task-card:active { background: #1a3050; }
+    .task-card.pri-high { border-left-color: #e74c3c; }
+    .task-card.pri-med { border-left-color: #f0a830; }
+    .task-card.pri-low { border-left-color: #4ecdc4; }
     .task-card.done-card { opacity: 0.5; }
     .task-card.done-card .task-title { text-decoration: line-through; }
+    .task-pri {
+      font-size: 0.25rem; color: #2a5a6a; flex-shrink: 0;
+      background: none; border: 1px solid #1a3a5c; padding: 2px 4px;
+      font-family: 'Press Start 2P', monospace; cursor: pointer;
+    }
+    .task-pri:active { border-color: #4ecdc4; }
+    .task-pri.pri-high { color: #e74c3c; border-color: #e74c3c; }
+    .task-pri.pri-med { color: #f0a830; border-color: #f0a830; }
+    .task-pri.pri-low { color: #4ecdc4; border-color: #4ecdc4; }
     .task-check {
       width: 14px; height: 14px; flex-shrink: 0;
       border: 2px solid #1a3a5c; background: none;
@@ -349,9 +361,12 @@
 
         colTasks.forEach(t => {
           const isDone = col.key === 'done';
-          html += '<div class="task-card' + (isDone ? ' done-card' : '') + '" data-id="' + t.id + '">';
+          const pri = t.priority || 'low';
+          const priLabel = { high: 'H', med: 'M', low: 'L' }[pri] || 'L';
+          html += '<div class="task-card pri-' + pri + (isDone ? ' done-card' : '') + '" data-id="' + t.id + '">';
           html += '<div class="task-check' + (isDone ? ' checked' : '') + '" data-action="toggle" data-id="' + t.id + '" data-col="' + col.key + '">' + (isDone ? '✓' : '') + '</div>';
           html += '<span class="task-title">' + escHtml(t.title) + '</span>';
+          html += '<button class="task-pri pri-' + pri + '" data-action="priority" data-id="' + t.id + '" data-pri="' + pri + '">' + priLabel + '</button>';
           html += '<button class="task-delete" data-action="delete" data-id="' + t.id + '">×</button>';
           html += '</div>';
         });
@@ -397,6 +412,15 @@
           if (col === 'done') updateTask(id, { column: 'todo' });
           else if (col === 'todo') updateTask(id, { column: 'progress' });
           else updateTask(id, { column: 'done' });
+        });
+      });
+      pc.querySelectorAll('[data-action="priority"]').forEach(el => {
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          const id = el.dataset.id;
+          const cycle = { low: 'med', med: 'high', high: 'low' };
+          const next = cycle[el.dataset.pri] || 'low';
+          updateTask(id, { priority: next });
         });
       });
       pc.querySelectorAll('[data-action="delete"]').forEach(el => {

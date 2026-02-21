@@ -27,6 +27,7 @@ interface Task {
   board: string;     // "seth" | "rex"
   column: string;    // "todo" | "progress" | "done"
   title: string;
+  priority: string;  // "low" | "med" | "high"
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -112,6 +113,7 @@ export default {
           board,
           column,
           title: body.title || 'Untitled',
+          priority: body.priority || 'low',
           order: boardColTasks.length,
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -138,6 +140,7 @@ export default {
         if (body.column !== undefined) tasks[idx].column = body.column;
         if (body.order !== undefined) tasks[idx].order = body.order;
         if (body.board !== undefined) tasks[idx].board = body.board;
+        if (body.priority !== undefined) tasks[idx].priority = body.priority;
         tasks[idx].updatedAt = Date.now();
 
         await saveTasks(env, tasks);
