@@ -68,20 +68,20 @@
     /* ── Chat Bar (fixed bottom) ── */
     #chat-bar {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 10px;
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 8px;
       background: #0a1628; border-top: 2px solid #1a3a5c;
       font-family: 'Press Start 2P', monospace;
     }
     #chat-input {
-      flex: 1; height: 34px; padding: 0 10px;
+      flex: 1; min-width: 0; height: 34px; padding: 0 8px;
       font-size: 16px; font-family: 'Press Start 2P', monospace;
       background: #122240; border: 2px solid #1a3a5c; color: #c0e8e4; outline: none;
     }
     #chat-input:focus { border-color: #4ecdc4; }
     #chat-input::placeholder { color: #2a5a6a; font-size: 0.4rem; }
     #chat-send {
-      height: 34px; padding: 0 12px;
+      height: 34px; padding: 0 10px; flex-shrink: 0;
       font-size: 0.5rem; font-family: 'Press Start 2P', monospace;
       background: #4ecdc4; color: #0a1628; border: 2px solid #4ecdc4; cursor: pointer;
       font-weight: bold;
