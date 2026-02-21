@@ -109,14 +109,13 @@
 
     /* ── Side Panel ── */
     #side-panel {
-      position: fixed; top: 0; right: -260px; width: 260px; height: 100vh;
-      z-index: 600; transition: right 0.15s ease;
+      position: fixed; inset: 0; z-index: 600;
+      transform: translateX(100%); transition: transform 0.2s ease;
       display: flex; flex-direction: column;
-      background: #0a1628; border-left: 2px solid #1a3a5c;
-      box-shadow: -4px 0 8px rgba(0,0,0,0.5);
+      background: #0a1628;
       font-family: 'Press Start 2P', monospace;
     }
-    #side-panel.open { right: 0; }
+    #side-panel.open { transform: translateX(0); }
     #panel-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px; border-bottom: 2px solid #1a3a5c;
@@ -167,7 +166,7 @@
       font-family: 'Press Start 2P', monospace;
     }
     .task-card {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: flex-start; gap: 6px;
       padding: 8px; margin-bottom: 4px;
       background: #122240; border-left: 3px solid #1a3a5c; border-top: 1px solid #1a3a5c; border-right: 1px solid #1a3a5c; border-bottom: 1px solid #1a3a5c;
       cursor: pointer; user-select: none; -webkit-user-select: none;
@@ -205,6 +204,14 @@
       font-family: 'Press Start 2P', monospace;
     }
     .task-delete:active { color: #e74c3c; }
+    .task-desc {
+      font-size: 0.22rem; color: #4a7a74; line-height: 1.5;
+      padding: 2px 0 0 20px;
+      font-family: 'Press Start 2P', monospace;
+      word-break: break-word;
+    }
+    .task-body { flex: 1; min-width: 0; }
+    .task-top { display: flex; align-items: center; gap: 6px; }
     .add-task-row {
       display: flex; gap: 4px; margin-top: 6px; padding: 0 0 8px;
     }
@@ -366,9 +373,14 @@
           const priLabel = { high: 'H', med: 'M', low: 'L' }[pri] || 'L';
           html += '<div class="task-card pri-' + pri + (isDone ? ' done-card' : '') + '" data-id="' + t.id + '">';
           html += '<div class="task-check' + (isDone ? ' checked' : '') + '" data-action="toggle" data-id="' + t.id + '" data-col="' + col.key + '">' + (isDone ? '✓' : '') + '</div>';
+          html += '<div class="task-body">';
+          html += '<div class="task-top">';
           html += '<span class="task-title">' + escHtml(t.title) + '</span>';
           html += '<button class="task-pri pri-' + pri + '" data-action="priority" data-id="' + t.id + '" data-pri="' + pri + '">' + priLabel + '</button>';
           html += '<button class="task-delete" data-action="delete" data-id="' + t.id + '">×</button>';
+          html += '</div>';
+          if (t.desc) html += '<div class="task-desc">' + escHtml(t.desc) + '</div>';
+          html += '</div>';
           html += '</div>';
         });
 
