@@ -534,13 +534,13 @@
       const msg = chatInput.value.trim();
       if (!msg) return;
       chatInput.value = '';
-      addMsg({ sender: 'user', text: msg, id: 'pending-' + Date.now(), timestamp: Date.now() });
       try {
         await fetch(API + '/chat/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: msg })
         });
+        pollChat(); // immediate poll to show sent message
       } catch(e) { console.error('Send failed:', e); }
     }
 
@@ -548,10 +548,9 @@
       const fd = new FormData();
       fd.append('file', file);
       if (caption) fd.append('text', caption);
-      addMsg({ sender: 'user', text: caption || file.name, id: 'pending-' + Date.now(), timestamp: Date.now(),
-        media: URL.createObjectURL(file), mediaType: file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'file' });
       try {
         await fetch(API + '/chat/send', { method: 'POST', body: fd });
+        pollChat();
       } catch(e) { console.error('Upload failed:', e); }
     }
 

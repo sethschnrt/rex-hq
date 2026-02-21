@@ -5,11 +5,7 @@
 
 export interface Env {
   STATUS_KV: KVNamespace;
-  BOT_TOKEN: string;
 }
-
-const CHAT_ID = '8316935874';
-const TG = 'https://api.telegram.org/bot';
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -190,18 +186,16 @@ export default {
       return json({ ok: true });
     }
 
-    // ── Chat: Send message (user → Telegram) ──
+    // ── Chat: Send message (user → KV) ──
     if (path === '/chat/send' && request.method === 'POST') {
       try {
         const contentType = request.headers.get('content-type') || '';
 
         if (contentType.includes('multipart/form-data')) {
-          // File upload
           const formData = await request.formData();
           const text = formData.get('text') as string || '';
           const file = formData.get('file') as File | null;
 
-          // Store user message
           const msg: ChatMsg = {
             id: generateId(),
             sender: 'user',
@@ -210,72 +204,27 @@ export default {
           };
 
           if (file) {
-            // Determine Telegram method based on file type
             const fType = file.type || '';
-            let tgMethod = 'sendDocument';
-            let tgField = 'document';
-            if (fType.startsWith('image/')) { tgMethod = 'sendPhoto'; tgField = 'photo'; msg.mediaType = 'image'; }
-            else if (fType.startsWith('video/')) { tgMethod = 'sendVideo'; tgField = 'video'; msg.mediaType = 'video'; }
-            else { msg.mediaType = 'file'; }
+            if (fType.startsWith('image/')) msg.mediaType = 'image';
+            else if (fType.startsWith('video/')) msg.mediaType = 'video';
+            else msg.mediaType = 'file';
 
-            // Forward to Telegram
-            const tgForm = new FormData();
-            tgForm.append('chat_id', CHAT_ID);
-            tgForm.append(tgField, file, file.name);
-            if (text) tgForm.append('caption', text);
-
-            const tgRes = await fetch(`${TG}${env.BOT_TOKEN}/${tgMethod}`, {
-              method: 'POST',
-              body: tgForm,
-            });
-            const tgData = await tgRes.json() as any;
-
-            if (!tgData.ok) {
-              return json({ error: 'telegram error', detail: tgData.description }, 502);
-            }
-
-            // Try to get file URL for display
-            // For photos, get the largest size
-            if (tgField === 'photo' && tgData.result?.photo) {
-              const sizes = tgData.result.photo;
-              const largest = sizes[sizes.length - 1];
-              const fileRes = await fetch(`${TG}${env.BOT_TOKEN}/getFile?file_id=${largest.file_id}`);
-              const fileData = await fileRes.json() as any;
-              if (fileData.ok) {
-                msg.media = `https://api.telegram.org/file/bot${env.BOT_TOKEN}/${fileData.result.file_path}`;
-              }
-            }
-          } else {
-            // Text only via form data
-            if (text) {
-              await fetch(`${TG}${env.BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: CHAT_ID, text }),
-              });
+            // Store file as base64 data URL in KV (small files only, <1MB)
+            const buf = await file.arrayBuffer();
+            if (buf.byteLength < 1_000_000) {
+              const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+              msg.media = `data:${fType};base64,${b64}`;
+            } else {
+              msg.text = (msg.text ? msg.text + ' ' : '') + '[file too large for preview]';
             }
           }
 
           await addMessage(env, msg);
           return json({ ok: true, message: msg }, 201);
-
         } else {
-          // JSON text message
           const body = await request.json() as { text?: string };
           const text = body.text || '';
           if (!text) return json({ error: 'empty message' }, 400);
-
-          // Send to Telegram
-          const tgRes = await fetch(`${TG}${env.BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: CHAT_ID, text }),
-          });
-          const tgData = await tgRes.json() as any;
-
-          if (!tgData.ok) {
-            return json({ error: 'telegram error', detail: tgData.description }, 502);
-          }
 
           const msg: ChatMsg = {
             id: generateId(),
@@ -298,6 +247,23 @@ export default {
       let msgs = await getMessages(env, limit);
       if (after) msgs = msgs.filter(m => m.timestamp > after);
       return json({ messages: msgs });
+    }
+
+    // ── Chat: Pending messages (Rex polls this) ──
+    if (path === '/chat/pending' && request.method === 'GET') {
+      const raw = await env.STATUS_KV.get('chat_last_read');
+      const lastRead = raw ? parseInt(raw) : 0;
+      const msgs = await getMessages(env, 200);
+      const pending = msgs.filter(m => m.sender === 'user' && m.timestamp > lastRead);
+      return json({ messages: pending, lastRead });
+    }
+
+    // ── Chat: Mark as read ──
+    if (path === '/chat/read' && request.method === 'POST') {
+      const body = await request.json() as { timestamp?: number };
+      const ts = body.timestamp || Date.now();
+      await env.STATUS_KV.put('chat_last_read', ts.toString());
+      return json({ ok: true });
     }
 
     // ── Chat: Rex reply (called by Rex's scripts) ──
