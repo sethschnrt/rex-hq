@@ -7,7 +7,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #1a1a2e; }
-    #game-container { width: 100%; padding-top: 44px; padding-bottom: 50px; }
+    #game-container { width: 100%; padding-top: 56px; padding-bottom: 50px; }
     canvas { display: block; width: 100% !important; height: auto !important; }
     .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 
@@ -40,20 +40,20 @@
 
     /* ── Top Bar (fixed) ── */
     #top-bar {
-      position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 500;
+      position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 500;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 10px; background: #0a1628;
+      padding: 0 14px; background: #0a1628;
       font-family: 'Press Start 2P', monospace;
       border-bottom: 2px solid #1a3a5c;
     }
-    #top-bar .title { font-size: 0.5rem; color: #4ecdc4; letter-spacing: 3px; }
-    #top-bar .right { display: flex; align-items: center; gap: 8px; }
+    #top-bar .title { font-size: 0.65rem; color: #4ecdc4; letter-spacing: 3px; }
+    #top-bar .right { display: flex; align-items: center; gap: 10px; }
     .bar-btn {
       background: #122240; border: 2px solid #1a3a5c; color: #4ecdc4;
-      font-size: 0.75rem; font-family: 'Press Start 2P', monospace;
-      cursor: pointer; padding: 6px 10px;
+      font-size: 1rem; font-family: 'Press Start 2P', monospace;
+      cursor: pointer; padding: 8px 12px;
       position: relative;
-      min-width: 36px; min-height: 36px;
+      min-width: 44px; min-height: 44px;
       display: flex; align-items: center; justify-content: center;
     }
     .bar-btn:active { background: #4ecdc4; color: #0a1628; }
