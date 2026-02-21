@@ -583,13 +583,16 @@
       }
       if (m.text) html += escHtml(m.text);
       d.innerHTML = html;
-      chatMessages.appendChild(d);
+      // Insert before typing indicator
+      chatMessages.insertBefore(d, typingEl);
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     async function pollChat() {
       try {
-        const r = await fetch(API + '/chat/messages?after=' + lastMsgTs);
+        var url = API + '/chat/messages';
+        if (lastMsgTs) url += '?after=' + lastMsgTs;
+        const r = await fetch(url);
         const d = await r.json();
         if (d.messages && d.messages.length) {
           d.messages.forEach(m => {
