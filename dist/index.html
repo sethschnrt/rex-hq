@@ -280,6 +280,7 @@
 
   <!-- Chat Bar -->
   <div id="chat-bar">
+    <button id="chat-attach" class="bar-btn" style="min-width:34px;min-height:34px;font-size:0.7rem;padding:4px 8px;">📎</button>
     <input type="text" id="chat-input" placeholder="Message Rex..." autocomplete="off" />
     <button id="chat-send">▶</button>
   </div>
@@ -518,26 +519,91 @@
     // Load tasks on first open
     fetchTasks();
 
-    // Chat
+    // ── Real Chat ──
     const chatInput = document.getElementById('chat-input');
     const chatMessages = document.getElementById('chat-messages');
-    function sendChat() {
+    const chatFileInput = document.createElement('input');
+    chatFileInput.type = 'file';
+    chatFileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.txt';
+    chatFileInput.style.display = 'none';
+    document.body.appendChild(chatFileInput);
+
+    let lastMsgTs = 0;
+    let renderedIds = new Set();
+
+    async function sendChat() {
       const msg = chatInput.value.trim();
       if (!msg) return;
-      addMsg('You', msg, 'user');
       chatInput.value = '';
-      setTimeout(() => addMsg('Rex', '...', 'rex'), 1500);
+      addMsg({ sender: 'user', text: msg, id: 'pending-' + Date.now(), timestamp: Date.now() });
+      try {
+        await fetch(API + '/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: msg })
+        });
+      } catch(e) { console.error('Send failed:', e); }
     }
-    function addMsg(sender, text, type) {
+
+    async function sendFile(file, caption) {
+      const fd = new FormData();
+      fd.append('file', file);
+      if (caption) fd.append('text', caption);
+      addMsg({ sender: 'user', text: caption || file.name, id: 'pending-' + Date.now(), timestamp: Date.now(),
+        media: URL.createObjectURL(file), mediaType: file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'file' });
+      try {
+        await fetch(API + '/chat/send', { method: 'POST', body: fd });
+      } catch(e) { console.error('Upload failed:', e); }
+    }
+
+    function addMsg(m) {
+      if (renderedIds.has(m.id)) return;
+      renderedIds.add(m.id);
       const d = document.createElement('div');
-      d.className = 'chat-msg ' + type;
-      d.innerHTML = '<div class="sender">' + sender + '</div>' + text;
+      d.className = 'chat-msg ' + (m.sender === 'user' ? 'user' : 'rex');
+      let html = '<div class="sender">' + (m.sender === 'user' ? 'You' : 'Rex') + '</div>';
+      if (m.media && m.mediaType === 'image') {
+        html += '<img src="' + escHtml(m.media) + '" style="max-width:100%;max-height:200px;display:block;margin:4px 0;image-rendering:auto;" />';
+      } else if (m.media && m.mediaType === 'video') {
+        html += '<video src="' + escHtml(m.media) + '" controls style="max-width:100%;max-height:200px;display:block;margin:4px 0;"></video>';
+      }
+      if (m.text) html += escHtml(m.text);
+      d.innerHTML = html;
       chatMessages.appendChild(d);
       chatMessages.scrollTop = chatMessages.scrollHeight;
-      setTimeout(() => { d.style.opacity = '0.3'; }, 10000);
     }
+
+    async function pollChat() {
+      try {
+        const r = await fetch(API + '/chat/messages?after=' + lastMsgTs);
+        const d = await r.json();
+        if (d.messages && d.messages.length) {
+          d.messages.forEach(m => {
+            addMsg(m);
+            if (m.timestamp > lastMsgTs) lastMsgTs = m.timestamp;
+          });
+        }
+      } catch {}
+    }
+
+    // Poll every 3 seconds
+    setInterval(pollChat, 3000);
+    pollChat();
+
     document.getElementById('chat-send').addEventListener('click', sendChat);
     chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+    chatFileInput.addEventListener('change', () => {
+      const file = chatFileInput.files[0];
+      if (file) {
+        const caption = chatInput.value.trim();
+        chatInput.value = '';
+        sendFile(file, caption);
+      }
+      chatFileInput.value = '';
+    });
+
+    document.getElementById('chat-attach').addEventListener('click', () => { chatFileInput.click(); });
 
     document.getElementById('btn-music').addEventListener('click', e => {
       e.target.style.color = e.target.style.color ? '' : '#5878a8';
