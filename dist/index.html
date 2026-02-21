@@ -238,16 +238,11 @@
       min-width: 36px;
     }
     .add-task-btn:active { background: #3ab5ad; }
-    .col-tasks { min-height: 8px; }
-    .task-move {
-      font-size: 0.35rem; color: #2a5a6a; cursor: pointer;
-      background: none; border: 1px solid #1a3a5c; padding: 3px 5px;
-      font-family: 'Press Start 2P', monospace;
-      min-width: 26px; min-height: 26px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .task-move:active { color: #4ecdc4; border-color: #4ecdc4; }
+    .col-tasks { min-height: 30px; padding: 4px 0; }
+    .task-card.sortable-ghost { opacity: 0.2; }
+    .sortable-fallback { opacity: 0.9 !important; box-shadow: 0 6px 16px rgba(0,0,0,0.6) !important; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <script type="module" crossorigin src="/rex-hq/assets/index-Dt8wqYdj.js"></script>
@@ -397,9 +392,6 @@
           html += '<span class="task-title">' + escHtml(t.title) + '</span>';
           html += '<div class="task-actions">';
           html += '<button class="task-pri pri-' + pri + '" data-action="priority" data-id="' + t.id + '" data-pri="' + pri + '">' + priLabel + '</button>';
-          var nextCol = { todo: 'progress', progress: 'done', done: 'todo' }[col.key];
-          var arrow = { todo: '→', progress: '→', done: '↩' }[col.key];
-          html += '<button class="task-move" data-action="move" data-id="' + t.id + '" data-to="' + nextCol + '">' + arrow + '</button>';
           html += '<button class="task-delete" data-action="delete" data-id="' + t.id + '">×</button>';
           html += '</div></div>';
           if (t.desc) html += '<div class="task-desc">' + escHtml(t.desc) + '</div>';
@@ -459,16 +451,47 @@
           updateTask(id, { priority: next });
         });
       });
-      pc.querySelectorAll('[data-action="move"]').forEach(el => {
-        el.addEventListener('click', e => {
-          e.stopPropagation();
-          updateTask(el.dataset.id, { column: el.dataset.to });
-        });
-      });
       pc.querySelectorAll('[data-action="delete"]').forEach(el => {
         el.addEventListener('click', e => {
           e.stopPropagation();
           deleteTask(el.dataset.id);
+        });
+      });
+
+      // Drag and drop between columns
+      pc.querySelectorAll('.col-tasks').forEach(colEl => {
+        new Sortable(colEl, {
+          group: 'kanban',
+          animation: 150,
+          forceFallback: true,
+          fallbackTolerance: 3,
+          delay: 200,
+          delayOnTouchOnly: true,
+          ghostClass: 'sortable-ghost',
+          filter: '.task-check, .task-pri, .task-delete',
+          preventOnFilter: false,
+          onEnd: function(evt) {
+            var cards = evt.to.querySelectorAll('.task-card');
+            var newCol = evt.to.dataset.column;
+            var updates = [];
+            cards.forEach(function(card, i) {
+              updates.push(fetch(API + '/tasks/' + card.dataset.id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ column: newCol, order: i })
+              }));
+            });
+            if (evt.from !== evt.to) {
+              evt.from.querySelectorAll('.task-card').forEach(function(card, i) {
+                updates.push(fetch(API + '/tasks/' + card.dataset.id, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ order: i })
+                }));
+              });
+            }
+            Promise.all(updates).then(function() { fetchTasks(); });
+          }
         });
       });
     }
