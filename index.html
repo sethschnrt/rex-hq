@@ -168,17 +168,34 @@
       font-family: 'Press Start 2P', monospace;
     }
     .task-card {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 12px; margin-bottom: 6px;
+      padding: 10px 12px; margin-bottom: 6px;
       background: #122240; border-left: 4px solid #1a3a5c; border-top: 1px solid #1a3a5c; border-right: 1px solid #1a3a5c; border-bottom: 1px solid #1a3a5c;
-      cursor: pointer; user-select: none; -webkit-user-select: none;
+      user-select: none; -webkit-user-select: none; touch-action: pan-y;
     }
-    .task-card:active { background: #1a3050; }
     .task-card.pri-high { border-left-color: #e74c3c; }
     .task-card.pri-med { border-left-color: #f0a830; }
     .task-card.pri-low { border-left-color: #4ecdc4; }
     .task-card.done-card { opacity: 0.5; }
     .task-card.done-card .task-title { text-decoration: line-through; }
+    .task-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .task-check {
+      width: 24px; height: 24px; flex-shrink: 0;
+      border: 2px solid #1a3a5c; background: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.4rem; color: #4ecdc4;
+    }
+    .task-check.checked { background: #4ecdc4; border-color: #4ecdc4; color: #0a1628; }
+    .task-title {
+      flex: 1; font-size: 0.4rem; color: #c0e8e4;
+      font-family: 'Press Start 2P', monospace;
+      word-break: break-word; line-height: 1.5;
+      min-width: 0;
+    }
+    .task-actions {
+      display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+    }
     .task-pri {
       font-size: 0.3rem; color: #2a5a6a; flex-shrink: 0;
       background: none; border: 1px solid #1a3a5c; padding: 4px 6px;
@@ -190,18 +207,6 @@
     .task-pri.pri-high { color: #e74c3c; border-color: #e74c3c; }
     .task-pri.pri-med { color: #f0a830; border-color: #f0a830; }
     .task-pri.pri-low { color: #4ecdc4; border-color: #4ecdc4; }
-    .task-check {
-      width: 22px; height: 22px; flex-shrink: 0;
-      border: 2px solid #1a3a5c; background: none;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.4rem; color: #4ecdc4; margin-top: 1px;
-    }
-    .task-check.checked { background: #4ecdc4; border-color: #4ecdc4; color: #0a1628; }
-    .task-title {
-      flex: 1; font-size: 0.4rem; color: #c0e8e4;
-      font-family: 'Press Start 2P', monospace;
-      word-break: break-word; line-height: 1.5;
-    }
     .task-delete {
       font-size: 0.5rem; color: #2a5a6a; cursor: pointer;
       background: none; border: none; padding: 4px 6px;
@@ -211,13 +216,11 @@
     }
     .task-delete:active { color: #e74c3c; }
     .task-desc {
-      font-size: 0.3rem; color: #4a7a74; line-height: 1.6;
-      padding: 4px 0 0 0;
+      font-size: 0.28rem; color: #4a7a74; line-height: 1.6;
+      padding: 6px 0 0 32px;
       font-family: 'Press Start 2P', monospace;
       word-break: break-word;
     }
-    .task-body { flex: 1; min-width: 0; }
-    .task-top { display: flex; align-items: center; gap: 6px; }
     .add-task-row {
       display: flex; gap: 6px; margin-top: 8px; padding: 0 0 8px;
     }
@@ -237,10 +240,7 @@
     .add-task-btn:active { background: #3ab5ad; }
     .task-card.sortable-ghost { opacity: 0.3; }
     .task-card.sortable-drag { opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-    .task-card .drag-handle {
-      color: #1a3a5c; font-size: 0.5rem; cursor: grab; flex-shrink: 0;
-      padding: 2px 4px; touch-action: none;
-    }
+    .task-card { touch-action: pan-y; }
     .col-tasks { min-height: 20px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
@@ -387,16 +387,14 @@
           const pri = t.priority || 'low';
           const priLabel = { high: 'H', med: 'M', low: 'L' }[pri] || 'L';
           html += '<div class="task-card pri-' + pri + (isDone ? ' done-card' : '') + '" data-id="' + t.id + '">';
-          html += '<span class="drag-handle">⠿</span>';
+          html += '<div class="task-row">';
           html += '<div class="task-check' + (isDone ? ' checked' : '') + '" data-action="toggle" data-id="' + t.id + '" data-col="' + col.key + '">' + (isDone ? '✓' : '') + '</div>';
-          html += '<div class="task-body">';
-          html += '<div class="task-top">';
           html += '<span class="task-title">' + escHtml(t.title) + '</span>';
+          html += '<div class="task-actions">';
           html += '<button class="task-pri pri-' + pri + '" data-action="priority" data-id="' + t.id + '" data-pri="' + pri + '">' + priLabel + '</button>';
           html += '<button class="task-delete" data-action="delete" data-id="' + t.id + '">×</button>';
-          html += '</div>';
+          html += '</div></div>';
           if (t.desc) html += '<div class="task-desc">' + escHtml(t.desc) + '</div>';
-          html += '</div>';
           html += '</div>';
         });
 
@@ -465,7 +463,8 @@
         new Sortable(colEl, {
           group: 'kanban',
           animation: 150,
-          handle: '.drag-handle',
+          delay: 300,
+          delayOnTouchOnly: true,
           ghostClass: 'sortable-ghost',
           dragClass: 'sortable-drag',
           onEnd: function(evt) {
