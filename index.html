@@ -170,7 +170,7 @@
     .task-card {
       padding: 10px 12px; margin-bottom: 6px;
       background: #122240; border-left: 4px solid #1a3a5c; border-top: 1px solid #1a3a5c; border-right: 1px solid #1a3a5c; border-bottom: 1px solid #1a3a5c;
-      user-select: none; -webkit-user-select: none; touch-action: pan-y;
+      user-select: none; -webkit-user-select: none;
     }
     .task-card.pri-high { border-left-color: #e74c3c; }
     .task-card.pri-med { border-left-color: #f0a830; }
@@ -238,12 +238,16 @@
       min-width: 36px;
     }
     .add-task-btn:active { background: #3ab5ad; }
-    .task-card.sortable-ghost { opacity: 0.3; }
-    .task-card.sortable-drag { opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-    .task-card { touch-action: pan-y; }
-    .col-tasks { min-height: 20px; }
+    .col-tasks { min-height: 8px; }
+    .task-move {
+      font-size: 0.35rem; color: #2a5a6a; cursor: pointer;
+      background: none; border: 1px solid #1a3a5c; padding: 3px 5px;
+      font-family: 'Press Start 2P', monospace;
+      min-width: 26px; min-height: 26px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .task-move:active { color: #4ecdc4; border-color: #4ecdc4; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
@@ -392,6 +396,9 @@
           html += '<span class="task-title">' + escHtml(t.title) + '</span>';
           html += '<div class="task-actions">';
           html += '<button class="task-pri pri-' + pri + '" data-action="priority" data-id="' + t.id + '" data-pri="' + pri + '">' + priLabel + '</button>';
+          var nextCol = { todo: 'progress', progress: 'done', done: 'todo' }[col.key];
+          var arrow = { todo: '→', progress: '→', done: '↩' }[col.key];
+          html += '<button class="task-move" data-action="move" data-id="' + t.id + '" data-to="' + nextCol + '">' + arrow + '</button>';
           html += '<button class="task-delete" data-action="delete" data-id="' + t.id + '">×</button>';
           html += '</div></div>';
           if (t.desc) html += '<div class="task-desc">' + escHtml(t.desc) + '</div>';
@@ -451,48 +458,16 @@
           updateTask(id, { priority: next });
         });
       });
+      pc.querySelectorAll('[data-action="move"]').forEach(el => {
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          updateTask(el.dataset.id, { column: el.dataset.to });
+        });
+      });
       pc.querySelectorAll('[data-action="delete"]').forEach(el => {
         el.addEventListener('click', e => {
           e.stopPropagation();
           deleteTask(el.dataset.id);
-        });
-      });
-
-      // Init drag and drop
-      pc.querySelectorAll('.col-tasks').forEach(colEl => {
-        new Sortable(colEl, {
-          group: 'kanban',
-          animation: 150,
-          delay: 300,
-          delayOnTouchOnly: true,
-          ghostClass: 'sortable-ghost',
-          dragClass: 'sortable-drag',
-          onEnd: function(evt) {
-            const id = evt.item.dataset.id;
-            const newCol = evt.to.dataset.column;
-            const newOrder = evt.newIndex;
-            // Update all tasks in the target column with new order
-            const cards = evt.to.querySelectorAll('.task-card');
-            const updates = [];
-            cards.forEach((card, i) => {
-              updates.push(fetch(API + '/tasks/' + card.dataset.id, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ column: newCol, order: i })
-              }));
-            });
-            // Also reorder source column if different
-            if (evt.from !== evt.to) {
-              evt.from.querySelectorAll('.task-card').forEach((card, i) => {
-                updates.push(fetch(API + '/tasks/' + card.dataset.id, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ order: i })
-                }));
-              });
-            }
-            Promise.all(updates).then(() => fetchTasks());
-          }
         });
       });
     }
