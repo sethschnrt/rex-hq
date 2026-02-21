@@ -235,7 +235,15 @@
       min-width: 36px;
     }
     .add-task-btn:active { background: #3ab5ad; }
+    .task-card.sortable-ghost { opacity: 0.3; }
+    .task-card.sortable-drag { opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    .task-card .drag-handle {
+      color: #1a3a5c; font-size: 0.5rem; cursor: grab; flex-shrink: 0;
+      padding: 2px 4px; touch-action: none;
+    }
+    .col-tasks { min-height: 20px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
@@ -372,12 +380,14 @@
         const colTasks = boardTasks.filter(t => t.column === col.key);
         html += '<div class="kanban-col">';
         html += '<div class="col-header"><span class="col-title">' + col.label + '</span><span class="col-count">' + colTasks.length + '</span></div>';
+        html += '<div class="col-tasks" data-column="' + col.key + '">';
 
         colTasks.forEach(t => {
           const isDone = col.key === 'done';
           const pri = t.priority || 'low';
           const priLabel = { high: 'H', med: 'M', low: 'L' }[pri] || 'L';
           html += '<div class="task-card pri-' + pri + (isDone ? ' done-card' : '') + '" data-id="' + t.id + '">';
+          html += '<span class="drag-handle">⠿</span>';
           html += '<div class="task-check' + (isDone ? ' checked' : '') + '" data-action="toggle" data-id="' + t.id + '" data-col="' + col.key + '">' + (isDone ? '✓' : '') + '</div>';
           html += '<div class="task-body">';
           html += '<div class="task-top">';
@@ -390,6 +400,7 @@
           html += '</div>';
         });
 
+        html += '</div>';
         if (col.key === 'todo') {
           html += '<div class="add-task-row">';
           html += '<input class="add-task-input" id="new-task-input" placeholder="New task..." />';
@@ -446,6 +457,43 @@
         el.addEventListener('click', e => {
           e.stopPropagation();
           deleteTask(el.dataset.id);
+        });
+      });
+
+      // Init drag and drop
+      pc.querySelectorAll('.col-tasks').forEach(colEl => {
+        new Sortable(colEl, {
+          group: 'kanban',
+          animation: 150,
+          handle: '.drag-handle',
+          ghostClass: 'sortable-ghost',
+          dragClass: 'sortable-drag',
+          onEnd: function(evt) {
+            const id = evt.item.dataset.id;
+            const newCol = evt.to.dataset.column;
+            const newOrder = evt.newIndex;
+            // Update all tasks in the target column with new order
+            const cards = evt.to.querySelectorAll('.task-card');
+            const updates = [];
+            cards.forEach((card, i) => {
+              updates.push(fetch(API + '/tasks/' + card.dataset.id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ column: newCol, order: i })
+              }));
+            });
+            // Also reorder source column if different
+            if (evt.from !== evt.to) {
+              evt.from.querySelectorAll('.task-card').forEach((card, i) => {
+                updates.push(fetch(API + '/tasks/' + card.dataset.id, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ order: i })
+                }));
+              });
+            }
+            Promise.all(updates).then(() => fetchTasks());
+          }
         });
       });
     }
